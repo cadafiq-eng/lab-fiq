@@ -22,6 +22,7 @@ src/                   Aplicación web
 1. Supabase → SQL Editor: ejecutar `supabase/migrations/0001_esquema_base.sql`
    (si aparece el aviso de RLS, elegir «Run and enable RLS»).
 2. Ejecutar `supabase/migrations/0002_alta_perfiles.sql`.
+   Después, `0003_control_acceso.sql` (fase 2). Cada archivo se ejecuta una sola vez y en orden.
 3. Authentication → Users → **Add user**: correo y contraseña del Administrador,
    con «Auto Confirm User».
 4. En el SQL Editor, dar de alta su perfil (cambiar nombre y correo):
@@ -57,6 +58,18 @@ Inicie sesión como Administrador → **Personal** → cree:
   (por ejemplo `terminal@lab-fiq.uady`): al iniciar sesión con ella solo se ve
   la pantalla de autoservicio, y salir requiere credenciales del personal.
 
+## Uso diario del control de acceso
+
+- **Autorizaciones** (Administrador): al recibir el correo de solicitud, capturar matrícula, nombre,
+  correo, proyecto y periodo. Si la matrícula ya existe, se agrega otra autorización a la misma persona.
+- **Terminal**: la persona escribe su nombre, se elige y registra entrada, uso de equipo y salida.
+- **Presentes** (personal): quién está dentro; registrar entradas sin terminal y salidas olvidadas.
+- **Historial** (personal): consultar por fechas, corregir con motivo (queda constancia) y exportar a CSV.
+- **Sanciones** (Administrador): Art. 36. Las suspensiones vigentes bloquean acceso y préstamos.
+- **Cierre de jornada**: cada noche a las 20:30 se marcan como «salida no registrada» quienes no
+  marcaron salida. Si `0003` avisó que no pudo activar pg_cron, actívelo en Database → Extensions
+  y ejecute de nuevo el último bloque del archivo.
+
 ## Trabajo local (opcional)
 
 ```bash
@@ -70,7 +83,7 @@ npm run dev
 | Fase | Contenido | Estado |
 | --- | --- | --- |
 | 1. Base | Esquema, RLS, auditoría, cuentas, catálogos, tablero, terminal | Listo |
-| 2. Control de acceso | Autorizaciones, presentes, correcciones, sanciones | Pendiente |
+| 2. Control de acceso | Autorizaciones, presentes, historial y correcciones, sanciones, cierre diario, cambio de contraseña | Listo |
 | 3. Equipos | Alta, mantenimientos, capacitaciones, etiquetas QR | Pendiente |
 | 4. Préstamos | Préstamos internos y externos, devoluciones | Pendiente |
 | 5. Inventario | Artículos, lotes, entradas y salidas | Pendiente |

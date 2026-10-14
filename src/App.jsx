@@ -7,6 +7,8 @@ import Personal from './pages/admin/Personal';
 import TiposEquipo from './pages/admin/TiposEquipo';
 import Configuracion from './pages/admin/Configuracion';
 import Pendiente from './pages/Pendiente';
+import Acceso from './pages/acceso/Acceso';
+import MiCuenta from './pages/MiCuenta';
 
 export default function App() {
   const { sesion, perfil, cargando, esPersonal, esTerminal, esAdmin, salir } = useSesion();
@@ -55,13 +57,15 @@ export default function App() {
         <div className="usuario">
           <strong>{perfil.nombre}</strong>
           <span className="tenue">{perfil.roles.map(nombreRol).join(' · ')}</span>
+          <NavLink to="/mi-cuenta" className="enlace-cuenta">Mi cuenta</NavLink>
           <button className="btn btn-enlace" onClick={salir}>Cerrar sesión</button>
         </div>
       </aside>
       <main className="contenido">
         <Routes>
           <Route path="/inicio" element={<Inicio />} />
-          <Route path="/acceso" element={<Pendiente titulo="Control de acceso" fase={2} />} />
+          <Route path="/acceso/*" element={<Acceso />} />
+          <Route path="/mi-cuenta" element={<MiCuenta />} />
           <Route path="/equipos" element={<Pendiente titulo="Equipos" fase={3} />} />
           <Route path="/prestamos" element={<Pendiente titulo="Préstamos" fase={4} />} />
           <Route path="/inventario" element={<Pendiente titulo="Inventario" fase={5} />} />
