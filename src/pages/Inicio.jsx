@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../supabase';
 import { useSesion } from '../auth';
 
@@ -46,7 +47,7 @@ export default function Inicio() {
               {datos.mant.length === 0 ? <p className="tenue">Sin mantenimientos próximos.</p> : (
                 <table><tbody>
                   {datos.mant.map((x) => (
-                    <tr key={x.id}><td>{x.codigo}</td><td>{x.nombre}</td>
+                    <tr key={x.id}><td><Link to={`/equipos/ficha/${x.id}`}>{x.codigo}</Link></td><td>{x.nombre}</td>
                       <td className="der"><span className={'etiqueta ' + (x.vencido ? 'etq-mal' : 'etq-aviso')}>
                         {x.vencido ? 'Vencido' : 'Próximo'} · {x.proximo_mantenimiento}</span></td></tr>
                   ))}

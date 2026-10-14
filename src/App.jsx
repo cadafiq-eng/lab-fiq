@@ -9,6 +9,7 @@ import Configuracion from './pages/admin/Configuracion';
 import Pendiente from './pages/Pendiente';
 import Acceso from './pages/acceso/Acceso';
 import MiCuenta from './pages/MiCuenta';
+import Equipos from './pages/equipos/Equipos';
 
 export default function App() {
   const { sesion, perfil, cargando, esPersonal, esTerminal, esAdmin, salir } = useSesion();
@@ -66,7 +67,7 @@ export default function App() {
           <Route path="/inicio" element={<Inicio />} />
           <Route path="/acceso/*" element={<Acceso />} />
           <Route path="/mi-cuenta" element={<MiCuenta />} />
-          <Route path="/equipos" element={<Pendiente titulo="Equipos" fase={3} />} />
+          <Route path="/equipos/*" element={<Equipos />} />
           <Route path="/prestamos" element={<Pendiente titulo="Préstamos" fase={4} />} />
           <Route path="/inventario" element={<Pendiente titulo="Inventario" fase={5} />} />
           {esAdmin && <Route path="/admin/personal" element={<Personal />} />}

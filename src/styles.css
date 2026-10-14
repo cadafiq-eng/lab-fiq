@@ -71,7 +71,8 @@ fieldset { border: 1px solid var(--borde); border-radius: 6px; padding: 10px 12p
 legend { font-weight: 600; font-size: .92rem; padding: 0 4px; }
 .casilla { flex-direction: row; align-items: center; gap: 8px; font-weight: 400; }
 .nota { font-size: .85rem; margin: 4px 0 0; }
-.fila-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.fila-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+label > input:not([type=checkbox]), label > select, label > textarea { min-width: 0; width: 100%; }
 .fila-botones { display: flex; gap: 8px; }
 
 .btn {
@@ -187,3 +188,52 @@ textarea:focus, select:focus { outline: 2px solid var(--oro); outline-offset: 1p
   .indicadores { grid-template-columns: 1fr 1fr; }
 }
 .chico { font-size: .8rem; }
+
+/* Fase 3: equipos */
+.encabezado { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.encabezado h1, .encabezado h2 { margin-bottom: 0; }
+.encabezado .tenue { margin: 4px 0 0; }
+.envolver { flex-wrap: wrap; }
+a.btn { text-decoration: none; display: inline-block; }
+.volver { color: var(--azul-medio); text-decoration: none; font-size: .92rem; }
+.volver:hover { text-decoration: underline; }
+tr.fila-enlace { cursor: pointer; }
+tr.fila-enlace:hover td { background: var(--oro-claro); }
+.datos { display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; margin: 0; }
+.datos dt { color: var(--tenue); font-size: .9rem; }
+.datos dd { margin: 0; }
+.formulario-ancho { max-width: 860px; }
+.fila-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.aviso-alerta { background: var(--aviso-fondo); color: var(--aviso); }
+h2.crece { margin: 0; align-self: center; }
+
+.hoja-etiquetas { display: flex; flex-wrap: wrap; gap: 4mm; margin-top: 16px; }
+.etiqueta-qr {
+  display: flex; align-items: center; gap: 3mm; background: #fff; border: 1px dashed #9aa3b1;
+  border-radius: 2mm; padding: 2.5mm; break-inside: avoid; page-break-inside: avoid; overflow: hidden;
+}
+.etiqueta-qr-codigo svg { display: block; width: 100%; height: 100%; }
+.etiqueta-qr-texto { display: flex; flex-direction: column; gap: 1mm; min-width: 0; line-height: 1.15; color: #000; }
+.etiqueta-qr-texto strong { font-size: 1.1em; word-break: break-all; }
+.etiqueta-qr-texto span { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.etiqueta-qr-lab { font-size: .7em; text-transform: uppercase; letter-spacing: .04em; color: #444; }
+.etq-chica .etiqueta-qr { width: 50mm; height: 25mm; font-size: 7pt; }
+.etq-chica .etiqueta-qr-codigo { width: 19mm; height: 19mm; flex: none; }
+.etq-mediana .etiqueta-qr { width: 70mm; height: 35mm; font-size: 9pt; }
+.etq-mediana .etiqueta-qr-codigo { width: 29mm; height: 29mm; flex: none; }
+.etq-grande .etiqueta-qr { width: 90mm; height: 45mm; font-size: 11pt; }
+.etq-grande .etiqueta-qr-codigo { width: 38mm; height: 38mm; flex: none; }
+
+@media print {
+  body { background: #fff; }
+  .lateral, .no-imprimir { display: none !important; }
+  .marco { display: block; }
+  .contenido { padding: 0; max-width: none; }
+  .hoja-etiquetas { margin: 0; }
+  @page { margin: 10mm; }
+}
+@media (max-width: 860px) {
+  .fila-3 { grid-template-columns: minmax(0, 1fr); }
+  .datos { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .datos dd { margin-bottom: 8px; }
+}

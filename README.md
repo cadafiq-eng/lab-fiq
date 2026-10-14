@@ -22,7 +22,8 @@ src/                   Aplicación web
 1. Supabase → SQL Editor: ejecutar `supabase/migrations/0001_esquema_base.sql`
    (si aparece el aviso de RLS, elegir «Run and enable RLS»).
 2. Ejecutar `supabase/migrations/0002_alta_perfiles.sql`.
-   Después, `0003_control_acceso.sql` (fase 2). Cada archivo se ejecuta una sola vez y en orden.
+   Después, `0003_control_acceso.sql` (fase 2) y `0004_equipos.sql` (fase 3).
+   Cada archivo se ejecuta una sola vez y en orden.
 3. Authentication → Users → **Add user**: correo y contraseña del Administrador,
    con «Auto Confirm User».
 4. En el SQL Editor, dar de alta su perfil (cambiar nombre y correo):
@@ -70,6 +71,20 @@ Inicie sesión como Administrador → **Personal** → cree:
   marcaron salida. Si `0003` avisó que no pudo activar pg_cron, actívelo en Database → Extensions
   y ejecute de nuevo el último bloque del archivo.
 
+## Uso del módulo de equipos
+
+- **Catálogo**: alta y edición (código único, tipo, datos técnicos, periodicidad del preventivo).
+  Al elegir el tipo se indica si requiere capacitación y quién la imparte.
+- **Ficha**: situación, mantenimientos, bitácora de uso, historial de estados y personas capacitadas.
+- **Estados**: «en uso» y «prestado» los ponen la terminal y los préstamos. Los demás se cambian con
+  «Cambiar estado» y un motivo. Para volver a «disponible» se registra el mantenimiento o la reparación
+  (el Administrador puede hacerlo directamente). Solo el Administrador da de baja.
+- **Mantenimientos**: el preventivo actualiza el último y recalcula el próximo; el correctivo no mueve
+  el calendario. Si no queda operativo, el equipo pasa a «fuera de servicio». Con el preventivo vencido,
+  el equipo no puede usarse ni prestarse.
+- **Capacitaciones** (Administrador): una por persona y tipo de equipo.
+- **Etiquetas QR**: se imprimen desde el catálogo o la ficha; el código abre la ficha del equipo.
+
 ## Trabajo local (opcional)
 
 ```bash
@@ -84,7 +99,7 @@ npm run dev
 | --- | --- | --- |
 | 1. Base | Esquema, RLS, auditoría, cuentas, catálogos, tablero, terminal | Listo |
 | 2. Control de acceso | Autorizaciones, presentes, historial y correcciones, sanciones, cierre diario, cambio de contraseña | Listo |
-| 3. Equipos | Alta, mantenimientos, capacitaciones, etiquetas QR | Pendiente |
+| 3. Equipos | Catálogo, ficha, estados con historial, mantenimientos, capacitaciones, bitácora de uso, etiquetas QR | Listo |
 | 4. Préstamos | Préstamos internos y externos, devoluciones | Pendiente |
 | 5. Inventario | Artículos, lotes, entradas y salidas | Pendiente |
 | 6. Carga inicial y piloto | Inventario real, reportes, capacitación | Pendiente |
