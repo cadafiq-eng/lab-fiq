@@ -23,7 +23,7 @@ src/                   Aplicación web
    (si aparece el aviso de RLS, elegir «Run and enable RLS»).
 2. Ejecutar `supabase/migrations/0002_alta_perfiles.sql`.
    Después, `0003_control_acceso.sql` (fase 2), `0004_equipos.sql` (fase 3) y
-   `0005_prestamos_inventario.sql` (fases 4 y 5).
+   `0005_prestamos_inventario.sql` (fases 4 y 5) y `0006_carga_inicial.sql` (fase 6).
    Cada archivo se ejecuta una sola vez y en orden.
 3. Authentication → Users → **Add user**: correo y contraseña del Administrador,
    con «Auto Confirm User».
@@ -97,6 +97,17 @@ Inicie sesión como Administrador → **Personal** → cree:
   especiales (Art. 28) solo los entrega el Administrador. Los ajustes por conteo físico son del
   Administrador. La existencia nunca se edita a mano: cambia solo con movimientos.
 
+## Carga inicial, reportes y guía
+
+- **Carga inicial** (Administrador → Carga inicial): plantillas en `public/plantillas/`. La importación
+  valida cada renglón y, si alguno tiene error, no guarda nada.
+- **Reportes** (menú Reportes): uso del laboratorio, inventario y consumo, préstamos. «Imprimir o
+  guardar PDF» genera el documento con encabezado institucional; cada tabla exporta a CSV.
+- **Guía de uso**: menú Ayuda → Guía de uso. El contenido está en `src/pages/ayuda/contenido.js` y es la
+  misma fuente del manual `public/manual/manual_laboratorio.pdf`. Si cambia el contenido, regenere el PDF
+  abriendo la Guía de uso, «Todas las secciones», y usando Imprimir → Guardar como PDF (tamaño Carta);
+  reemplace el archivo en `public/manual/`.
+
 ## Trabajo local (opcional)
 
 ```bash
@@ -114,5 +125,5 @@ npm run dev
 | 3. Equipos | Catálogo, ficha, estados con historial, mantenimientos, capacitaciones, bitácora de uso, etiquetas QR | Listo |
 | 4. Préstamos | Internos y externos, personas externas, devoluciones parciales, ampliación de plazo | Listo |
 | 5. Inventario | Artículos con pictogramas, entradas, salidas, pérdidas, ajustes, alertas de existencia y caducidad | Listo |
-| 6. Carga inicial y piloto | Inventario real, reportes, capacitación | Pendiente |
+| 6. Carga inicial y piloto | Importación desde Excel, reportes imprimibles, guía de uso (app y PDF) | Listo; falta el piloto |
 | 7. Cierre | Aviso de privacidad, liberación formal | Pendiente |

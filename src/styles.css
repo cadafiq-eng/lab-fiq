@@ -264,3 +264,53 @@ h2.crece { margin: 0; align-self: center; }
 @media (max-width: 860px) {
   .datos-linea { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Fase 6: carga inicial, reportes y ayuda */
+.boton-archivo { display: inline-flex; flex-direction: row; font-weight: 600; font-size: 1rem; cursor: pointer; }
+.boton-archivo input { display: none; }
+tr.fila-error td { background: var(--mal-fondo); }
+.texto-error { color: var(--mal); font-size: .88rem; }
+.tabla-alta { max-height: 520px; overflow: auto; }
+.casilla.en-linea { display: inline-flex; margin-left: 8px; }
+.solo-impresion { display: none; }
+.barras { display: flex; flex-direction: column; gap: 6px; }
+.barra-fila { display: grid; grid-template-columns: 90px 1fr 40px; align-items: center; gap: 8px; font-size: .9rem; }
+.barra-pista { background: var(--fondo); border-radius: 4px; height: 14px; overflow: hidden; }
+.barra { display: block; height: 100%; background: var(--azul-medio); border-radius: 4px; min-width: 2px; }
+.barra-valor { text-align: right; font-weight: 600; }
+@media print {
+  .solo-impresion { display: block; }
+  .encabezado-reporte { border-bottom: 2px solid #14284b; margin-bottom: 12px; }
+  .encabezado-reporte p { margin: 2px 0; font-size: 10pt; color: #444; }
+  .encabezado-reporte h1 { font-size: 16pt; margin: 4px 0; }
+  .seccion-reporte, .indicador { break-inside: avoid; }
+  .tarjeta { border-color: #bbb; }
+  .tabla-desplazable { overflow: visible; }
+  .indicadores { grid-template-columns: repeat(4, 1fr); }
+  .barra { background: #555 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .dos-columnas { grid-template-columns: 1fr 1fr; }
+}
+.dos-columnas > .una-columna { margin-top: 0; }
+.ayuda-indice ol { margin: 0; padding-left: 20px; columns: 2; }
+.ayuda-indice li { margin: 3px 0; }
+.ayuda-capitulo h2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 1.25rem; }
+.ayuda-seccion { border-top: 1px solid var(--borde); padding-top: 10px; margin-top: 12px; }
+.ayuda-seccion:first-of-type { border-top: none; margin-top: 0; }
+.ayuda-seccion h3 { font-size: 1.02rem; color: var(--azul-medio); margin: 0 0 6px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ayuda-seccion p, .ayuda-seccion li { line-height: 1.5; }
+.ayuda-pasos, .ayuda-lista { padding-left: 22px; margin: 6px 0; }
+.ayuda-pasos li, .ayuda-lista li { margin: 3px 0; }
+.ayuda-nota { background: var(--oro-claro); border-left: 3px solid var(--oro); padding: 8px 12px; border-radius: 4px; }
+.ayuda-tabla { margin: 6px 0; font-size: .92rem; }
+.ayuda-tabla td { vertical-align: top; }
+.portada-manual { text-align: center; padding: 30mm 0 12mm; border-bottom: 2px solid #14284b; margin-bottom: 10mm; }
+.portada-manual h1 { font-size: 26pt; margin: 18mm 0 4mm; }
+.portada-manual h2 { font-size: 16pt; color: #24406f; margin: 0 0 6mm; }
+@media print {
+  .ayuda-capitulo { break-before: page; border: none; padding: 0; }
+  .ayuda-seccion { break-inside: avoid; }
+  .ayuda-indice { border: none; padding: 0; }
+  .ayuda-indice ol { columns: 1; font-size: 12pt; }
+  .ayuda-nota { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+@media (max-width: 860px) { .ayuda-indice ol { columns: 1; } }
