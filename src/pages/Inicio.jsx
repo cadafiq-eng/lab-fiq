@@ -12,7 +12,8 @@ export default function Inicio() {
       supabase.from('v_presentes').select('*').order('entrada'),
       supabase.from('v_mantenimientos_alerta').select('*').order('proximo_mantenimiento'),
       supabase.from('v_prestamos_vencidos').select('*').order('fecha_limite'),
-    ]).then(([p, m, v]) => setDatos({ presentes: p.data ?? [], mant: m.data ?? [], vencidos: v.data ?? [] }));
+      supabase.from('v_stock_bajo').select('*').order('nombre'),
+    ]).then(([p, m, v, s]) => setDatos({ presentes: p.data ?? [], mant: m.data ?? [], vencidos: v.data ?? [], stock: s.data ?? [] }));
   }, []);
 
   const hora = new Date().getHours();
@@ -29,6 +30,7 @@ export default function Inicio() {
             <Indicador valor={datos.mant.filter((x) => x.vencido).length} etiqueta="mantenimientos vencidos" alerta />
             <Indicador valor={datos.mant.filter((x) => !x.vencido).length} etiqueta="mantenimientos próximos" />
             <Indicador valor={datos.vencidos.length} etiqueta="préstamos vencidos" alerta />
+            <Indicador valor={datos.stock.length} etiqueta="artículos bajo mínimo" alerta />
           </div>
           <div className="dos-columnas">
             <section className="tarjeta">
@@ -54,6 +56,29 @@ export default function Inicio() {
                 </tbody></table>
               )}
             </section>
+            {datos.vencidos.length > 0 && (
+              <section className="tarjeta">
+                <h2>Préstamos vencidos</h2>
+                <table><tbody>
+                  {datos.vencidos.map((x) => (
+                    <tr key={x.id}><td><Link to={`/prestamos/detalle/${x.id}`}>{x.nombre}</Link></td>
+                      <td className="tenue">{x.matricula ?? 'Externo'}</td>
+                      <td className="der"><span className="etiqueta etq-mal">Venció {fechaCorta(x.fecha_limite)}</span></td></tr>
+                  ))}
+                </tbody></table>
+              </section>
+            )}
+            {datos.stock.length > 0 && (
+              <section className="tarjeta">
+                <h2>Inventario bajo mínimo</h2>
+                <table><tbody>
+                  {datos.stock.map((x) => (
+                    <tr key={x.id}><td><Link to={`/inventario/articulo/${x.id}`}>{x.nombre}</Link></td>
+                      <td className="der">{Number(x.existencia)} de {Number(x.stock_minimo)} {x.unidad}</td></tr>
+                  ))}
+                </tbody></table>
+              </section>
+            )}
           </div>
         </>
       )}
@@ -70,4 +95,5 @@ function Indicador({ valor, etiqueta, alerta }) {
   );
 }
 
+const fechaCorta = (iso) => iso.slice(0, 10).split('-').reverse().join('/');
 const hhmm = (t) => new Date(t).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });

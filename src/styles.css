@@ -72,7 +72,7 @@ legend { font-weight: 600; font-size: .92rem; padding: 0 4px; }
 .casilla { flex-direction: row; align-items: center; gap: 8px; font-weight: 400; }
 .nota { font-size: .85rem; margin: 4px 0 0; }
 .fila-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-label > input:not([type=checkbox]), label > select, label > textarea { min-width: 0; width: 100%; }
+label > input:not([type=checkbox]):not([type=radio]), label > select, label > textarea { min-width: 0; width: 100%; }
 .fila-botones { display: flex; gap: 8px; }
 
 .btn {
@@ -236,4 +236,31 @@ h2.crece { margin: 0; align-self: center; }
   .fila-3 { grid-template-columns: minmax(0, 1fr); }
   .datos { grid-template-columns: minmax(0, 1fr); gap: 2px; }
   .datos dd { margin-bottom: 8px; }
+}
+
+/* Fases 4 y 5: préstamos e inventario */
+.indicadores { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.lista-simple { margin: 0; padding-left: 18px; }
+.lista-simple li { margin: 2px 0; }
+.fila-agregar { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.fila-agregar .crece { flex: 1; min-width: 200px; }
+.angosto { width: 110px; }
+.angosto-ancho { max-width: 280px; }
+.lista-renglones { list-style: none; margin: 0; padding: 0; border: 1px solid var(--borde); border-radius: 6px; }
+.lista-renglones li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--borde); }
+.lista-renglones li:last-child { border-bottom: none; }
+.pictogramas { display: flex; flex-wrap: wrap; gap: 4px; }
+.pictograma {
+  font-size: .72rem; font-weight: 600; color: #8a1c12; background: #fff; border: 1.5px solid #c8281b;
+  border-radius: 3px; padding: 1px 6px; white-space: nowrap;
+}
+.existencia-baja { color: var(--mal); font-weight: 600; }
+.existencia-grande { font-size: 1.6rem; font-weight: 700; color: var(--azul); margin: 0 0 12px; }
+.existencia-grande .etiqueta { font-size: .8rem; vertical-align: middle; }
+.alerta-tarjeta { border-left: 4px solid var(--aviso); }
+.alerta-tarjeta h2 { font-size: 1rem; }
+.rejilla-casillas { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 14px; }
+.datos-linea { grid-template-columns: max-content 1fr max-content 1fr; }
+@media (max-width: 860px) {
+  .datos-linea { grid-template-columns: minmax(0, 1fr); }
 }

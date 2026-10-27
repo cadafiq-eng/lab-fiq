@@ -22,7 +22,8 @@ src/                   Aplicación web
 1. Supabase → SQL Editor: ejecutar `supabase/migrations/0001_esquema_base.sql`
    (si aparece el aviso de RLS, elegir «Run and enable RLS»).
 2. Ejecutar `supabase/migrations/0002_alta_perfiles.sql`.
-   Después, `0003_control_acceso.sql` (fase 2) y `0004_equipos.sql` (fase 3).
+   Después, `0003_control_acceso.sql` (fase 2), `0004_equipos.sql` (fase 3) y
+   `0005_prestamos_inventario.sql` (fases 4 y 5).
    Cada archivo se ejecuta una sola vez y en orden.
 3. Authentication → Users → **Add user**: correo y contraseña del Administrador,
    con «Auto Confirm User».
@@ -85,6 +86,17 @@ Inicie sesión como Administrador → **Personal** → cree:
 - **Capacitaciones** (Administrador): una por persona y tipo de equipo.
 - **Etiquetas QR**: se imprimen desde el catálogo o la ficha; el código abre la ficha del equipo.
 
+## Uso de préstamos e inventario
+
+- **Préstamos**: a personas con acceso vigente o a personas externas (profesores, otros laboratorios),
+  que se registran desde el mismo formulario. Un préstamo puede incluir equipos y materiales retornables.
+  Los externos (Art. 16) y los de más de 7 días (Art. 17) los registra el Administrador.
+- **Devoluciones**: por renglón y parciales. Lo devuelto regresa a la existencia; lo perdido o roto no.
+  Un equipo devuelto con daño queda «fuera de servicio».
+- **Inventario**: los consumibles salen como «salida»; los retornables, como préstamo. Los reactivos
+  especiales (Art. 28) solo los entrega el Administrador. Los ajustes por conteo físico son del
+  Administrador. La existencia nunca se edita a mano: cambia solo con movimientos.
+
 ## Trabajo local (opcional)
 
 ```bash
@@ -100,7 +112,7 @@ npm run dev
 | 1. Base | Esquema, RLS, auditoría, cuentas, catálogos, tablero, terminal | Listo |
 | 2. Control de acceso | Autorizaciones, presentes, historial y correcciones, sanciones, cierre diario, cambio de contraseña | Listo |
 | 3. Equipos | Catálogo, ficha, estados con historial, mantenimientos, capacitaciones, bitácora de uso, etiquetas QR | Listo |
-| 4. Préstamos | Préstamos internos y externos, devoluciones | Pendiente |
-| 5. Inventario | Artículos, lotes, entradas y salidas | Pendiente |
+| 4. Préstamos | Internos y externos, personas externas, devoluciones parciales, ampliación de plazo | Listo |
+| 5. Inventario | Artículos con pictogramas, entradas, salidas, pérdidas, ajustes, alertas de existencia y caducidad | Listo |
 | 6. Carga inicial y piloto | Inventario real, reportes, capacitación | Pendiente |
 | 7. Cierre | Aviso de privacidad, liberación formal | Pendiente |
