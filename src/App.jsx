@@ -6,10 +6,11 @@ import Terminal from './pages/Terminal';
 import Personal from './pages/admin/Personal';
 import TiposEquipo from './pages/admin/TiposEquipo';
 import Configuracion from './pages/admin/Configuracion';
-import Pendiente from './pages/Pendiente';
 import Acceso from './pages/acceso/Acceso';
 import MiCuenta from './pages/MiCuenta';
 import Equipos from './pages/equipos/Equipos';
+import Prestamos from './pages/prestamos/Prestamos';
+import Inventario from './pages/inventario/Inventario';
 
 export default function App() {
   const { sesion, perfil, cargando, esPersonal, esTerminal, esAdmin, salir } = useSesion();
@@ -68,8 +69,8 @@ export default function App() {
           <Route path="/acceso/*" element={<Acceso />} />
           <Route path="/mi-cuenta" element={<MiCuenta />} />
           <Route path="/equipos/*" element={<Equipos />} />
-          <Route path="/prestamos" element={<Pendiente titulo="Préstamos" fase={4} />} />
-          <Route path="/inventario" element={<Pendiente titulo="Inventario" fase={5} />} />
+          <Route path="/prestamos/*" element={<Prestamos />} />
+          <Route path="/inventario/*" element={<Inventario />} />
           {esAdmin && <Route path="/admin/personal" element={<Personal />} />}
           {esAdmin && <Route path="/admin/tipos-equipo" element={<TiposEquipo />} />}
           {esAdmin && <Route path="/admin/configuracion" element={<Configuracion />} />}
