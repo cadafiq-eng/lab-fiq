@@ -52,8 +52,19 @@ Laboratorios de la FIQ y su Manual de Seguridad. Responsable: Dr. Luis Antonio C
   vigente o personas externas registradas (`solicitantes.externo`).
 - Inventario: consumibles (salida) y retornables (préstamo). La existencia solo cambia con
   movimientos. Pictogramas NOM-018-STPS-2015.
+- Carga inicial: plantillas Excel en `public/plantillas/` (generadas con openpyxl; sin celdas de texto
+  vacío, que `read-excel-file` no acepta). Importación atómica con `importar_articulos` e
+  `importar_equipos` (solo Administrador).
+- Guía de uso: una sola fuente, `src/pages/ayuda/contenido.js`, para la Ayuda y el manual PDF
+  (`public/manual/manual_laboratorio.pdf`, impresión de la página Ayuda). Al cambiar una regla,
+  actualizar también la guía y regenerar el PDF.
+
+## Entrega
+
+- Trabajar en una rama y entregar por pull request; el responsable lo acepta y GitHub Pages publica.
+- Si hay migración nueva, indicarlo en el PR: debe ejecutarse en Supabase antes de aceptarlo.
 
 ## Pendiente
 
-- Fase 6: carga inicial del inventario real (plantilla Excel), reportes y piloto.
+- Fase 6: piloto de una semana con el personal y ajustes.
 - Fase 7: aviso de privacidad y liberación formal.
