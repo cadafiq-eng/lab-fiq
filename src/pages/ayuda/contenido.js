@@ -21,7 +21,7 @@ export const CAPITULOS = [
       {
         titulo: '¿Qué hace el sistema?',
         bloques: [
-          { p: 'El Sistema de Gestión Integral del Laboratorio registra quién entra y sale, el uso y el mantenimiento de los equipos, los préstamos de equipo y material, y el inventario. Aplica automáticamente el Reglamento de Laboratorios de la FIQ: si una acción no está permitida, el sistema no la registra y explica por qué.' },
+          { p: 'El Sistema de Gestión Integral del Laboratorio registra quién entra y sale, la agenda de reservaciones del laboratorio, el uso y el mantenimiento de los equipos, los préstamos de equipo y material, y el inventario. Aplica automáticamente el Reglamento de Laboratorios de la FIQ: si una acción no está permitida, el sistema no la registra y explica por qué.' },
           { p: 'Nada se borra. Lo que se da de baja queda en el historial y cada cambio queda registrado con la persona y la hora en que se hizo.' },
         ],
       },
@@ -87,6 +87,57 @@ export const CAPITULOS = [
         bloques: [
           { p: 'Busque su nombre y pulse «Registrar salida». Si tiene equipos en uso, primero termine su uso.' },
           { nota: 'Quien no registra su salida queda marcado como «salida no registrada» al cierre de la jornada.' },
+        ],
+      },
+      {
+        titulo: 'Ver la ocupación del laboratorio',
+        bloques: [
+          { p: 'Debajo del buscador aparecen las reservaciones de hoy: horario, actividad y si ocupan todo el laboratorio o algún equipo. Con «Ver la semana» se consultan los próximos 7 días. No se muestran datos personales.' },
+          { nota: 'Para reservar el laboratorio, acuda con el personal en turno o envíe la solicitud de práctica al Responsable.' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'reservaciones',
+    titulo: 'Reservaciones',
+    para: 'personal',
+    secciones: [
+      {
+        titulo: 'Calendario',
+        bloques: [
+          { p: 'Menú → Reservaciones muestra la semana con un color por tipo de actividad: clase, taller o curso, investigación, proyecto, vinculación u otra. Use «Anterior» y «Siguiente» para cambiar de semana; haga clic en una reservación para ver el detalle, o doble clic en un día para reservarlo.' },
+          { p: 'En «Lista» se consultan las reservaciones de un periodo con filtros y búsqueda, y se exportan a CSV.' },
+        ],
+      },
+      {
+        titulo: 'Registrar una reservación',
+        bloques: [
+          { pasos: [
+            'Reservaciones → «Nueva reservación».',
+            'Elija el tipo de actividad y escriba el nombre de la práctica, proyecto o servicio. En clases, talleres y cursos capture la asignatura, el programa educativo, el semestre y el número de alumnos (formato de solicitud de prácticas).',
+            'Capture al responsable (profesor, asesor o responsable del servicio), quiénes usarán el laboratorio y si son internos o externos; para externos, la institución.',
+            'Indique la fecha y el horario. Para una clase semanal marque «Repetir cada semana» y la fecha final (máximo 26 sesiones).',
+            'Agregue los equipos que se usarán, los materiales y los residuos peligrosos que se generarán.',
+            'Revise el cuadro «Ese día» y los avisos de cruce, y pulse «Reservar».',
+          ] },
+          { tabla: {
+            encabezados: ['Situación', 'Regla'],
+            filas: [
+              ['Clase', 'Ocupa todo el laboratorio: no puede coincidir con ninguna otra reservación.'],
+              ['Investigación, proyecto, vinculación, taller u otra', 'Puede coincidir con otras actividades, salvo que se marque «Ocupa todo el laboratorio» (los talleres y cursos lo traen marcado).'],
+              ['Mismo equipo', 'Un equipo no puede estar en dos reservaciones a la misma hora.'],
+              ['Fuera del horario o en fin de semana', 'Solo la registra el Administrador, con un contacto de emergencia. Conviene que trabajen al menos dos personas y avisar al Secretario Administrativo (formato de acceso en fin de semana).'],
+              ['Serie semanal con un cruce', 'No se guarda ninguna sesión; el mensaje indica la fecha que se cruza.'],
+            ],
+          } },
+          { nota: 'La reservación aparta el horario; para entrar, cada persona necesita su autorización de acceso vigente, y el uso de cada equipo se registra en la terminal, que revisa capacitación y mantenimiento.' },
+        ],
+      },
+      {
+        titulo: 'Editar o cancelar',
+        bloques: [
+          { p: 'En el detalle de la reservación, «Editar» cambia los datos de esa sesión y «Cancelar reservación» la deja como cancelada con su motivo y libera el horario. En una serie semanal puede cancelar también las sesiones siguientes. Las reservaciones canceladas no se reactivan: se registra una nueva.' },
         ],
       },
     ],
@@ -269,10 +320,11 @@ export const CAPITULOS = [
         bloques: [
           { pasos: [
             'Menú → Reportes.',
-            'Elija el reporte: uso del laboratorio, inventario y consumo, o préstamos.',
+            'Elija el reporte: uso del laboratorio, actividades (reservaciones), inventario y consumo, o préstamos.',
             'Ajuste el periodo (o use «Este mes», «Mes anterior», «Este año»).',
             'Pulse «Imprimir o guardar PDF» para obtener el documento con encabezado institucional, o «CSV» en cada tabla para abrirla en Excel.',
           ] },
+          { p: 'El reporte de actividades agrupa las reservaciones realizadas en docencia (prácticas, talleres y cursos), investigación y proyectos, y vinculación y servicios, con sesiones, horas, alumnos y equipos: sirve para llenar las secciones II y III del reporte trimestral.' },
         ],
       },
     ],
@@ -324,6 +376,10 @@ export const CAPITULOS = [
       {
         titulo: 'No puedo registrar un préstamo de más de 7 días o externo',
         bloques: [{ p: 'Es correcto: los Arts. 16 y 17 requieren autorización del Administrador, que debe registrar el préstamo con su cuenta.' }],
+      },
+      {
+        titulo: 'No puedo guardar una reservación',
+        bloques: [{ p: 'El mensaje indica la causa: se cruza con una clase o con algo que ocupa todo el laboratorio, un equipo ya está reservado a esa hora, o es fuera de horario o en fin de semana (la registra el Administrador).' }],
       },
       {
         titulo: 'Alguien cerró la pantalla de la terminal',

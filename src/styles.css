@@ -314,3 +314,46 @@ tr.fila-error td { background: var(--mal-fondo); }
   .ayuda-nota { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 @media (max-width: 860px) { .ayuda-indice ol { columns: 1; } }
+
+/* ---------------------------------------------------------------------
+   Reservaciones: colores por actividad y calendario semanal
+   --------------------------------------------------------------------- */
+.act-clase { background: #dbe6f7; color: #1d3f78; }
+.act-taller { background: #e4ddf3; color: #4a2d82; }
+.act-investigacion { background: #d9efe2; color: #1d6640; }
+.act-proyecto { background: #fbe7cc; color: #7a4a0c; }
+.act-vinculacion { background: #f7dbe3; color: #85203f; }
+.act-otro { background: #eceef2; color: #4b5563; }
+.leyenda { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 4px 0 12px; }
+.calendario-barra { align-items: center; margin-bottom: 8px; }
+.calendario-barra h2 { font-size: 1.05rem; }
+.calendario { display: grid; min-width: 640px; border: 1px solid var(--borde); border-radius: 6px; overflow: hidden; }
+.cal-dia-titulo { text-align: center; padding: 6px 4px; font-size: .9rem; color: var(--tenue); border-left: 1px solid var(--borde); border-bottom: 1px solid var(--borde); background: var(--fondo); }
+.cal-dia-titulo strong { color: var(--texto, #1f2937); font-size: 1.05rem; }
+.cal-hoy { background: var(--oro-claro); }
+.cal-hoy strong { color: var(--azul); }
+.cal-horas { position: relative; background: var(--fondo); }
+.cal-horas span { position: absolute; right: 6px; transform: translateY(-50%); font-size: .72rem; color: var(--tenue); }
+.cal-horas span:first-child { transform: none; }
+.cal-columna { position: relative; border-left: 1px solid var(--borde);
+  background-image: linear-gradient(to bottom, var(--borde) 1px, transparent 1px); }
+.cal-finde { background-color: #fafafb; }
+.cal-evento { position: absolute; overflow: hidden; border-radius: 5px; padding: 2px 6px; font-size: .78rem; line-height: 1.25;
+  text-decoration: none; display: flex; flex-direction: column; border-left: 3px solid currentColor; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.cal-evento:hover { filter: brightness(.96); z-index: 2; }
+.cal-evento span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-evento .cal-detalle { opacity: .8; }
+.cal-exclusiva { border-left-width: 6px; }
+.cal-cancelada { opacity: .5; text-decoration: line-through; }
+.lista-dia { list-style: none; padding: 0; }
+.lista-dia li { padding: 6px 0; border-bottom: 1px solid var(--borde); }
+.lista-dia li:last-child { border-bottom: none; }
+h3 { font-size: .95rem; margin: 16px 0 6px; }
+
+/* Agenda en la terminal */
+.terminal-agenda { display: flex; flex-direction: column; gap: 8px; }
+.terminal-agenda-dia { font-weight: 700; color: var(--azul); margin: 10px 0 2px; }
+.terminal-reserva { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 10px; align-items: start;
+  background: #fff; border: 1px solid var(--borde); border-radius: var(--radio); padding: 10px 14px; font-size: 1.05rem; }
+.terminal-reserva .tenue { font-size: .9rem; }
+.terminal-hoy-titulo { font-size: 1.1rem; font-weight: 600; color: var(--azul); margin: 8px 0 0; }
