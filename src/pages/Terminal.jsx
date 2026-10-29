@@ -14,10 +14,20 @@ export default function Terminal() {
   const [aviso, setAviso] = useState(null);
   const [presentes, setPresentes] = useState(0);
   const [salirAbierto, setSalirAbierto] = useState(false);
+  const [agenda, setAgenda] = useState([]);
+  const [verSemana, setVerSemana] = useState(false);
   const temporizador = useRef(null);
 
   const actualizarPresentes = () => supabase.rpc('terminal_presentes').then(({ data }) => setPresentes(data ?? 0));
   useEffect(() => { actualizarPresentes(); const t = setInterval(actualizarPresentes, 60000); return () => clearInterval(t); }, []);
+
+  // Ocupación del laboratorio (reservaciones) de hoy y los próximos 7 días, sin datos personales
+  const actualizarAgenda = () => {
+    const d = new Date();
+    const hoy = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    supabase.rpc('terminal_agenda', { p_desde: hoy, p_dias: 7 }).then(({ data }) => setAgenda(data ?? []));
+  };
+  useEffect(() => { actualizarAgenda(); const t = setInterval(actualizarAgenda, 300000); return () => clearInterval(t); }, []);
 
   // Búsqueda con espera breve mientras se escribe
   useEffect(() => {
@@ -71,7 +81,15 @@ export default function Terminal() {
       <main className="terminal-cuerpo">
         {aviso && <div className={'terminal-aviso ' + (aviso.tipo === 'ok' ? 'aviso-ok' : 'aviso-error')}>{aviso.texto}</div>}
 
-        {!persona && (
+        {!persona && verSemana && (
+          <>
+            <p className="terminal-etiqueta">Ocupación del laboratorio · próximos 7 días</p>
+            <AgendaTerminal lista={agenda} porDia />
+            <button className="btn btn-enlace" onClick={() => setVerSemana(false)}>Volver</button>
+          </>
+        )}
+
+        {!persona && !verSemana && (
           <>
             <label className="terminal-etiqueta" htmlFor="buscar">Escribe tu nombre</label>
             <input id="buscar" className="terminal-buscar" value={texto} autoComplete="off" autoFocus
@@ -86,6 +104,13 @@ export default function Terminal() {
                 </button>
               ))}
             </div>
+            {texto.trim().length < 3 && (
+              <>
+                <p className="terminal-hoy-titulo">Hoy en el laboratorio</p>
+                <AgendaTerminal lista={agenda.filter((r) => new Date(r.inicio).toDateString() === new Date().toDateString())} />
+                <button className="btn btn-enlace" onClick={() => setVerSemana(true)}>Ver la semana</button>
+              </>
+            )}
           </>
         )}
 
@@ -149,6 +174,37 @@ export default function Terminal() {
         <button className="btn btn-enlace" onClick={() => setSalirAbierto(true)}>Cerrar terminal (personal)</button>
       </footer>
       {salirAbierto && <SalirTerminal alCerrar={() => setSalirAbierto(false)} />}
+    </div>
+  );
+}
+
+const ACT = { clase: 'Clase', taller_curso: 'Taller / curso', investigacion: 'Investigación', proyecto: 'Proyecto', vinculacion: 'Vinculación', otro: 'Otra' };
+const hm = (t) => new Date(t).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+
+function AgendaTerminal({ lista, porDia }) {
+  if (!lista.length) return <p className="tenue">{porDia ? 'No hay reservaciones en los próximos días.' : 'No hay reservaciones para hoy.'}</p>;
+  let diaAnterior = '';
+  return (
+    <div className="terminal-agenda">
+      {lista.map((r, i) => {
+        const dia = new Date(r.inicio).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+        const titulo = porDia && dia !== diaAnterior ? <p className="terminal-agenda-dia">{dia}</p> : null;
+        diaAnterior = dia;
+        return (
+          <div key={i}>
+            {titulo}
+            <div className="terminal-reserva">
+              <strong>{hm(r.inicio)}–{hm(r.fin)}</strong>
+              <div>
+                <span className={'etiqueta act-' + (r.actividad === 'taller_curso' ? 'taller' : r.actividad)}>{ACT[r.actividad]}</span>{' '}
+                {r.titulo}{r.asignatura ? ` · ${r.asignatura}` : ''}
+                <br /><span className="tenue">{r.ocupa_todo ? 'Ocupa todo el laboratorio' : 'Uso compartido'}
+                  {r.equipos?.length ? ` · Equipos: ${r.equipos.join(', ')}` : ''}</span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

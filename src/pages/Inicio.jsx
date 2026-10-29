@@ -13,7 +13,9 @@ export default function Inicio() {
       supabase.from('v_mantenimientos_alerta').select('*').order('proximo_mantenimiento'),
       supabase.from('v_prestamos_vencidos').select('*').order('fecha_limite'),
       supabase.from('v_stock_bajo').select('*').order('nombre'),
-    ]).then(([p, m, v, s]) => setDatos({ presentes: p.data ?? [], mant: m.data ?? [], vencidos: v.data ?? [], stock: s.data ?? [] }));
+      supabase.from('reservaciones').select('id, inicio, fin, titulo, actividad, ocupa_todo')
+        .eq('estado', 'programada').gte('inicio', hoyInicio().toISOString()).lt('inicio', hoyInicio(1).toISOString()).order('inicio'),
+    ]).then(([p, m, v, s, r]) => setDatos({ presentes: p.data ?? [], mant: m.data ?? [], vencidos: v.data ?? [], stock: s.data ?? [], hoy: r.data ?? [] }));
   }, []);
 
   const hora = new Date().getHours();
@@ -27,12 +29,25 @@ export default function Inicio() {
         <>
           <div className="indicadores">
             <Indicador valor={datos.presentes.length} etiqueta="personas dentro" />
+            <Indicador valor={datos.hoy.length} etiqueta="reservaciones hoy" />
             <Indicador valor={datos.mant.filter((x) => x.vencido).length} etiqueta="mantenimientos vencidos" alerta />
             <Indicador valor={datos.mant.filter((x) => !x.vencido).length} etiqueta="mantenimientos próximos" />
             <Indicador valor={datos.vencidos.length} etiqueta="préstamos vencidos" alerta />
             <Indicador valor={datos.stock.length} etiqueta="artículos bajo mínimo" alerta />
           </div>
           <div className="dos-columnas">
+            <section className="tarjeta">
+              <h2>Reservaciones de hoy</h2>
+              {datos.hoy.length === 0 ? <p className="tenue">No hay reservaciones para hoy. <Link to="/reservaciones/nueva">Reservar</Link></p> : (
+                <table><tbody>
+                  {datos.hoy.map((x) => (
+                    <tr key={x.id}><td className="sin-salto">{hhmm(x.inicio)}–{hhmm(x.fin)}</td>
+                      <td><Link to={`/reservaciones/detalle/${x.id}`}>{x.titulo}</Link></td>
+                      <td className="der">{x.ocupa_todo && <span className="etiqueta etq-gris">todo el lab</span>}</td></tr>
+                  ))}
+                </tbody></table>
+              )}
+            </section>
             <section className="tarjeta">
               <h2>Personas dentro</h2>
               {datos.presentes.length === 0 ? <p className="tenue">Nadie ha registrado entrada.</p> : (
@@ -97,3 +112,5 @@ function Indicador({ valor, etiqueta, alerta }) {
 
 const fechaCorta = (iso) => iso.slice(0, 10).split('-').reverse().join('/');
 const hhmm = (t) => new Date(t).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+// Medianoche local de hoy (o de dentro de n días)
+const hoyInicio = (n = 0) => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + n); return d; };

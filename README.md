@@ -23,7 +23,8 @@ src/                   Aplicación web
    (si aparece el aviso de RLS, elegir «Run and enable RLS»).
 2. Ejecutar `supabase/migrations/0002_alta_perfiles.sql`.
    Después, `0003_control_acceso.sql` (fase 2), `0004_equipos.sql` (fase 3) y
-   `0005_prestamos_inventario.sql` (fases 4 y 5) y `0006_carga_inicial.sql` (fase 6).
+   `0005_prestamos_inventario.sql` (fases 4 y 5), `0006_carga_inicial.sql` (fase 6) y
+   `0007_reservaciones.sql` (reservaciones).
    Cada archivo se ejecuta una sola vez y en orden.
 3. Authentication → Users → **Add user**: correo y contraseña del Administrador,
    con «Auto Confirm User».
@@ -86,6 +87,21 @@ Inicie sesión como Administrador → **Personal** → cree:
 - **Capacitaciones** (Administrador): una por persona y tipo de equipo.
 - **Etiquetas QR**: se imprimen desde el catálogo o la ficha; el código abre la ficha del equipo.
 
+## Uso de reservaciones
+
+- **Calendario** semanal por tipo de actividad (clase, taller o curso, investigación, proyecto,
+  vinculación, otra); **Lista** con filtros y CSV; **detalle** con edición y cancelación (con motivo).
+- Datos según el formato de solicitud de prácticas (FSP1), la solicitud de acceso y el reporte
+  trimestral: responsable, usuarios, interno o externo e institución, asignatura, programa, semestre,
+  alumnos, equipos, materiales y residuos peligrosos (grupos 1–7).
+- Reglas (en la base): una **clase** ocupa todo el laboratorio; las demás actividades pueden coincidir
+  salvo que se marquen «ocupa todo el laboratorio»; un **mismo equipo** no puede estar en dos
+  reservaciones a la vez; fuera de horario o en fin de semana solo el Administrador, con contacto de
+  emergencia (formato FAV). Clases semanales como serie (máximo 26 sesiones; si una se cruza, no se
+  guarda ninguna).
+- La **terminal** muestra la ocupación de hoy y de la semana sin datos personales, y **Reportes →
+  Actividades** resume docencia, investigación y vinculación para el reporte trimestral.
+
 ## Uso de préstamos e inventario
 
 - **Préstamos**: a personas con acceso vigente o a personas externas (profesores, otros laboratorios),
@@ -126,4 +142,5 @@ npm run dev
 | 4. Préstamos | Internos y externos, personas externas, devoluciones parciales, ampliación de plazo | Listo |
 | 5. Inventario | Artículos con pictogramas, entradas, salidas, pérdidas, ajustes, alertas de existencia y caducidad | Listo |
 | 6. Carga inicial y piloto | Importación desde Excel, reportes imprimibles, guía de uso (app y PDF) | Listo; falta el piloto |
+| Reservaciones | Calendario, series semanales, cruces por clase y por equipo, agenda en la terminal, reporte de actividades | Listo |
 | 7. Cierre | Aviso de privacidad, liberación formal | Pendiente |
