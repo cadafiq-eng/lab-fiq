@@ -9,6 +9,7 @@ import Configuracion from './pages/admin/Configuracion';
 import CargaInicial from './pages/admin/CargaInicial';
 import Reservaciones from './pages/reservaciones/Reservaciones';
 import ImportarSolicitud from './pages/solicitudes/ImportarSolicitud';
+import { usePendientesFIQ } from './pendientes';
 import Acceso from './pages/acceso/Acceso';
 import MiCuenta from './pages/MiCuenta';
 import Equipos from './pages/equipos/Equipos';
@@ -19,6 +20,7 @@ import Ayuda from './pages/ayuda/Ayuda';
 
 export default function App() {
   const { sesion, perfil, cargando, esPersonal, esTerminal, esAdmin, salir } = useSesion();
+  const pendientesFIQ = usePendientesFIQ(Boolean(esPersonal));
 
   if (cargando) return <div className="centrado"><p className="tenue">Cargando…</p></div>;
   if (!sesion) return <Login />;
@@ -50,7 +52,7 @@ export default function App() {
           <p className="nav-grupo">Operación</p>
           <NavLink to="/acceso">Control de acceso</NavLink>
           <NavLink to="/reservaciones">Reservaciones</NavLink>
-          <NavLink to="/solicitudes">Solicitudes FIQ</NavLink>
+          <NavLink to="/solicitudes">Solicitudes FIQ{pendientesFIQ > 0 && <span className="insignia" title="Por registrar">{pendientesFIQ}</span>}</NavLink>
           <NavLink to="/equipos">Equipos</NavLink>
           <NavLink to="/prestamos">Préstamos</NavLink>
           <NavLink to="/inventario">Inventario</NavLink>

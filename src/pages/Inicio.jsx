@@ -15,7 +15,8 @@ export default function Inicio() {
       supabase.from('v_stock_bajo').select('*').order('nombre'),
       supabase.from('reservaciones').select('id, inicio, fin, titulo, actividad, ocupa_todo')
         .eq('estado', 'programada').gte('inicio', hoyInicio().toISOString()).lt('inicio', hoyInicio(1).toISOString()).order('inicio'),
-    ]).then(([p, m, v, s, r]) => setDatos({ presentes: p.data ?? [], mant: m.data ?? [], vencidos: v.data ?? [], stock: s.data ?? [], hoy: r.data ?? [] }));
+      supabase.from('solicitudes_entrantes').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente'),
+    ]).then(([p, m, v, s, r, f]) => setDatos({ presentes: p.data ?? [], mant: m.data ?? [], vencidos: v.data ?? [], stock: s.data ?? [], hoy: r.data ?? [], fiq: f.count ?? 0 }));
   }, []);
 
   const hora = new Date().getHours();
@@ -27,6 +28,10 @@ export default function Inicio() {
       <p className="tenue">Resumen del laboratorio en este momento.</p>
       {!datos ? <p className="tenue">Cargando…</p> : (
         <>
+          {datos.fiq > 0 && (
+            <p className="aviso aviso-alerta"><strong>{datos.fiq} solicitud(es) FIQ por registrar.</strong>{' '}
+              <Link to="/solicitudes">Revisarlas</Link></p>
+          )}
           <div className="indicadores">
             <Indicador valor={datos.presentes.length} etiqueta="personas dentro" />
             <Indicador valor={datos.hoy.length} etiqueta="reservaciones hoy" />

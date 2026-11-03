@@ -135,16 +135,17 @@ export const CAPITULOS = [
         ],
       },
       {
-        titulo: 'Importar una solicitud del sistema de Laboratorios FIQ',
+        titulo: 'Solicitudes del sistema de Laboratorios FIQ',
         bloques: [
-          { p: 'Las solicitudes de acceso y de práctica llegan como aprobaciones de Power Automate de «Laboratorios FIQ», al correo del laboratorio. Se aprueban o rechazan ahí como siempre; la app no se conecta a ese sistema, pero evita volver a capturar los datos.' },
+          { p: 'Las solicitudes de acceso y de práctica llegan como aprobaciones de Power Automate de «Laboratorios FIQ» al correo del laboratorio. Se aprueban o rechazan ahí como siempre. Un flujo del laboratorio copia cada una a la app, donde aparecen en Menú → Solicitudes FIQ → «Pendientes», con un contador en el menú y un aviso en Inicio.' },
           { pasos: [
-            'Abra la aprobación en Outlook o en Power Automate, seleccione todo el texto (Ctrl + A) y cópielo (Ctrl + C).',
-            'Menú → Solicitudes FIQ y pegue el texto. La app reconoce si es una solicitud de práctica o de acceso y muestra lo que leyó.',
+            'Abra Solicitudes FIQ → Pendientes y pulse «Revisar» en la solicitud. La app muestra lo que leyó.',
             'Práctica: elija qué equipo del catálogo se reserva para cada equipo solicitado y pulse «Continuar a la reservación». El formulario se abre lleno (asignatura, horario, alumnos por programa educativo, materiales, reactivos y residuos): revise y pulse «Reservar».',
             'Acceso (Administrador): revise nombre, matrícula, correo, proyecto y periodo, y pulse «Registrar autorización». Para estudiantes se propone el correo institucional a partir de la matrícula; para académicos o externos capture su correo, que la solicitud no trae.',
+            'Al registrarla con su folio, la solicitud sale sola de Pendientes. Si la rechazó en Power Automate, es duplicada o de otro laboratorio, pulse «Descartar» e indique el motivo.',
           ] },
-          { nota: 'El folio de la solicitud FIQ queda guardado: la misma solicitud no se registra dos veces. Si la reservación se cancela, el folio se puede volver a usar para reprogramarla.' },
+          { p: 'Si una solicitud no llegó sola, use la pestaña «Pegar texto»: copie todo el texto del correo de aprobación (Ctrl + A, Ctrl + C) y péguelo.' },
+          { nota: 'Con «Activar avisos», la computadora muestra un aviso cuando llega una solicitud nueva mientras la app está abierta. El folio FIQ evita registrar dos veces la misma solicitud; si la reservación se cancela, el folio se puede volver a usar.' },
         ],
       },
       {

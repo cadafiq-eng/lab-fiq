@@ -357,3 +357,9 @@ h3 { font-size: .95rem; margin: 16px 0 6px; }
   background: #fff; border: 1px solid var(--borde); border-radius: var(--radio); padding: 10px 14px; font-size: 1.05rem; }
 .terminal-reserva .tenue { font-size: .9rem; }
 .terminal-hoy-titulo { font-size: 1.1rem; font-weight: 600; color: var(--azul); margin: 8px 0 0; }
+
+/* Solicitudes FIQ */
+.insignia { display: inline-block; min-width: 20px; margin-left: 8px; padding: 1px 6px; border-radius: 99px;
+  background: var(--oro); color: var(--azul); font-size: .78rem; font-weight: 700; text-align: center; }
+.texto-original { max-height: 360px; overflow: auto; white-space: pre-wrap; margin-top: 10px; }
+details.tarjeta summary { cursor: pointer; font-weight: 600; color: var(--azul); }

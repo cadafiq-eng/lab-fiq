@@ -11,7 +11,7 @@ conforme al Reglamento de Laboratorios de la FIQ y su Manual de Seguridad.
 
 ```
 supabase/migrations/   Scripts SQL, se ejecutan en orden en el SQL Editor de Supabase
-supabase/functions/    Edge Function para gestionar cuentas del personal
+supabase/functions/    Edge Functions: gestionar cuentas del personal y recibir solicitudes FIQ
 src/                   Aplicación web
 .github/workflows/     Publicación automática en GitHub Pages
 ```
@@ -24,7 +24,8 @@ src/                   Aplicación web
 2. Ejecutar `supabase/migrations/0002_alta_perfiles.sql`.
    Después, `0003_control_acceso.sql` (fase 2), `0004_equipos.sql` (fase 3) y
    `0005_prestamos_inventario.sql` (fases 4 y 5), `0006_carga_inicial.sql` (fase 6) y
-   `0007_reservaciones.sql` (reservaciones) y `0008_solicitudes_fiq.sql` (importar solicitudes FIQ).
+   `0007_reservaciones.sql` (reservaciones), `0008_solicitudes_fiq.sql` (importar solicitudes FIQ) y
+   `0009_bandeja_solicitudes.sql` (bandeja automática).
    Cada archivo se ejecuta una sola vez y en orden.
 3. Authentication → Users → **Add user**: correo y contraseña del Administrador,
    con «Auto Confirm User».
@@ -111,6 +112,34 @@ con el folio FIQ para no duplicar. Las personas sin matrícula (académicos, ext
 personas externas con autorización. Se agregan reactivos y alumnos por programa educativo (IQI, QA, QI,
 IA, IB, IIL) a las reservaciones, que alimentan el reporte de actividades.
 
+### Recepción automática (bandeja de pendientes)
+
+La cuenta del laboratorio solo tiene conectores estándar de Power Automate (sin HTTP), así que el
+correo hace de puente:
+
+```
+Aprobación (Laboratorios FIQ) → correo del laboratorio → flujo del laboratorio
+  («Cuando llega un nuevo correo (V3)», de flow-noreply@microsoft.com, asunto con «solicitud de
+  practica» o «solicitud de acceso» → «Enviar un correo (V2)» a la dirección de Postmark Inbound)
+  → Postmark Inbound → Edge Function recibir-solicitud → tabla solicitudes_entrantes
+```
+
+1. **Supabase → SQL Editor:** ejecutar `0009_bandeja_solicitudes.sql`.
+2. **Supabase → Edge Functions → Secrets:** crear `RECEPTOR_CLAVE` con una clave larga al azar
+   (32 caracteres o más). No se guarda en el repositorio.
+3. **Supabase → Edge Functions → Deploy a new function → Via Editor:** nombre `recibir-solicitud`,
+   pegar `supabase/functions/recibir-solicitud/index.ts`, desplegar y, en su configuración,
+   **desactivar «Verify JWT»** (Postmark no tiene sesión de Supabase; la protege la clave).
+4. **Postmark** (cuenta del responsable): crear un *Server*; en su *Inbound stream* copiar la
+   dirección de entrada (`…@inbound.postmarkapp.com`) y poner como *Webhook URL*
+   `https://lab:CLAVE@<PROYECTO>.supabase.co/functions/v1/recibir-solicitud`
+   (CLAVE = `RECEPTOR_CLAVE`).
+5. **Power Automate (cuenta del laboratorio):** en el flujo, poner esa dirección de Postmark en «Para».
+
+Las solicitudes llegan a **Solicitudes FIQ → Pendientes** (contador en el menú y aviso en Inicio).
+Al registrar la reservación o la autorización con su folio salen solas; las demás se descartan con
+motivo. Los datos pasan por Postmark: considerarlo en el aviso de privacidad (fase 7).
+
 ## Uso de préstamos e inventario
 
 - **Préstamos**: a personas con acceso vigente o a personas externas (profesores, otros laboratorios),
@@ -152,5 +181,5 @@ npm run dev
 | 5. Inventario | Artículos con pictogramas, entradas, salidas, pérdidas, ajustes, alertas de existencia y caducidad | Listo |
 | 6. Carga inicial y piloto | Importación desde Excel, reportes imprimibles, guía de uso (app y PDF) | Listo; falta el piloto |
 | Reservaciones | Calendario, series semanales, cruces por clase y por equipo, agenda en la terminal, reporte de actividades | Listo |
-| Solicitudes FIQ | Importación de aprobaciones de Power Automate a reservaciones y autorizaciones | Listo |
+| Solicitudes FIQ | Importación de aprobaciones de Power Automate a reservaciones y autorizaciones; bandeja automática vía Postmark | Listo |
 | 7. Cierre | Aviso de privacidad, liberación formal | Pendiente |
