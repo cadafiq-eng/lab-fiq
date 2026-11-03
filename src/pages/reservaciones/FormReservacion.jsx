@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase, mensajeError } from '../../supabase';
 import { useSesion } from '../../auth';
 import { Aviso, Etiqueta } from '../../componentes';
@@ -10,25 +10,34 @@ import { ACTIVIDADES, EtiquetaActividad, PestanasReservaciones, RESIDUOS, SELECT
 const VACIO = {
   actividad: 'clase', ocupa_todo: true, titulo: '', responsable: '', responsable_correo: '', responsable_telefono: '',
   usuarios: '', procedencia: 'interno', institucion: '', asignatura: '', programa_educativo: '', semestre: '',
-  num_alumnos: '', num_equipos_trabajo: '', materiales: '', contacto_emergencia: '', observaciones: '',
+  num_alumnos: '', num_equipos_trabajo: '', materiales: '', reactivos: '', contacto_emergencia: '', observaciones: '',
 };
 
 // Alta (y edición de una sola sesión) de una reservación
 export default function FormReservacion() {
   const { id } = useParams();
   const [params] = useSearchParams();
+  // Datos que llegan de «Importar solicitud FIQ»
+  const importada = useLocation().state;
   const navegar = useNavigate();
   const { esAdmin } = useSesion();
   const config = useConfiguracion();
 
-  const [f, setF] = useState(VACIO);
-  const [dia, setDia] = useState(params.get('fecha') || hoyISO());
-  const [horaIni, setHoraIni] = useState('09:00');
-  const [horaFin, setHoraFin] = useState('11:00');
+  const [f, setF] = useState(() => {
+    if (!importada?.inicial) return VACIO;
+    const t = (v) => (v == null ? '' : String(v));
+    return { ...VACIO, ...Object.fromEntries(Object.keys(VACIO).filter((k) => k in importada.inicial)
+      .map((k) => [k, k === 'ocupa_todo' ? importada.inicial[k] : t(importada.inicial[k])])),
+      ocupa_todo: ['clase', 'taller_curso'].includes(importada.inicial.actividad) };
+  });
+  const [extra] = useState({ folio_solicitud: importada?.inicial?.folio_solicitud ?? null, alumnos_pe: importada?.inicial?.alumnos_pe ?? null });
+  const [dia, setDia] = useState(importada?.dia || params.get('fecha') || hoyISO());
+  const [horaIni, setHoraIni] = useState(importada?.horaIni || '09:00');
+  const [horaFin, setHoraFin] = useState(importada?.horaFin || '11:00');
   const [repetir, setRepetir] = useState(false);
   const [hasta, setHasta] = useState('');
-  const [equiposSel, setEquiposSel] = useState([]);
-  const [residuos, setResiduos] = useState([]);
+  const [equiposSel, setEquiposSel] = useState(importada?.equipos ?? []);
+  const [residuos, setResiduos] = useState(importada?.residuos ?? []);
   const [equipos, setEquipos] = useState([]);
   const [equipoElegido, setEquipoElegido] = useState('');
   const [delDia, setDelDia] = useState([]);
@@ -109,7 +118,7 @@ export default function FormReservacion() {
       destino = `/reservaciones/detalle/${id}`;
     } else {
       let n;
-      ({ data: n, error } = await supabase.rpc('registrar_reservacion', { p: datos, p_hasta: repetir ? hasta : null }));
+      ({ data: n, error } = await supabase.rpc('registrar_reservacion', { p: { ...datos, ...extra }, p_hasta: repetir ? hasta : null }));
       destino = `/reservaciones/calendario?semana=${dia}`;
       if (!error && n > 1) destino += `&series=${n}`;
     }
@@ -125,6 +134,11 @@ export default function FormReservacion() {
     <>
       <h1>{id ? 'Editar reservación' : 'Reservaciones'}</h1>
       {id ? <Link className="volver" to={`/reservaciones/detalle/${id}`}>← Volver al detalle</Link> : <PestanasReservaciones />}
+      {extra.folio_solicitud && (
+        <p className="aviso aviso-ok">Datos tomados de la solicitud FIQ <strong>{extra.folio_solicitud}</strong>
+          {extra.alumnos_pe && <> · alumnos por programa: {Object.entries(extra.alumnos_pe).filter(([, n]) => n > 0).map(([k, n]) => `${k} ${n}`).join(', ') || '—'}</>}.
+          Revise y pulse «Reservar».</p>
+      )}
       <Aviso mensaje={mensaje} />
       <form className="dos-columnas dos-columnas-amplia" onSubmit={guardar}>
         <div className="columna">
@@ -205,6 +219,7 @@ export default function FormReservacion() {
             <p className="tenue nota">Un equipo no puede estar en dos reservaciones a la misma hora. La reservación no revisa capacitación ni mantenimiento:
               eso se verifica al usar el equipo en la terminal.</p>
             <label>Materiales e insumos<textarea rows={2} value={f.materiales} onChange={campo('materiales')} /></label>
+            <label>Reactivos, soluciones o medios de cultivo<textarea rows={2} value={f.reactivos} onChange={campo('reactivos')} /></label>
             <fieldset>
               <legend>Residuos peligrosos que se generarán</legend>
               <div className="rejilla-casillas">

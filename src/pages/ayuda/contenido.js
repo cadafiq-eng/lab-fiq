@@ -135,6 +135,19 @@ export const CAPITULOS = [
         ],
       },
       {
+        titulo: 'Importar una solicitud del sistema de Laboratorios FIQ',
+        bloques: [
+          { p: 'Las solicitudes de acceso y de práctica llegan como aprobaciones de Power Automate de «Laboratorios FIQ», al correo del laboratorio. Se aprueban o rechazan ahí como siempre; la app no se conecta a ese sistema, pero evita volver a capturar los datos.' },
+          { pasos: [
+            'Abra la aprobación en Outlook o en Power Automate, seleccione todo el texto (Ctrl + A) y cópielo (Ctrl + C).',
+            'Menú → Solicitudes FIQ y pegue el texto. La app reconoce si es una solicitud de práctica o de acceso y muestra lo que leyó.',
+            'Práctica: elija qué equipo del catálogo se reserva para cada equipo solicitado y pulse «Continuar a la reservación». El formulario se abre lleno (asignatura, horario, alumnos por programa educativo, materiales, reactivos y residuos): revise y pulse «Reservar».',
+            'Acceso (Administrador): revise nombre, matrícula, correo, proyecto y periodo, y pulse «Registrar autorización». Para estudiantes se propone el correo institucional a partir de la matrícula; para académicos o externos capture su correo, que la solicitud no trae.',
+          ] },
+          { nota: 'El folio de la solicitud FIQ queda guardado: la misma solicitud no se registra dos veces. Si la reservación se cancela, el folio se puede volver a usar para reprogramarla.' },
+        ],
+      },
+      {
         titulo: 'Editar o cancelar',
         bloques: [
           { p: 'En el detalle de la reservación, «Editar» cambia los datos de esa sesión y «Cancelar reservación» la deja como cancelada con su motivo y libera el horario. En una serie semanal puede cancelar también las sesiones siguientes. Las reservaciones canceladas no se reactivan: se registra una nueva.' },
@@ -380,6 +393,10 @@ export const CAPITULOS = [
       {
         titulo: 'No puedo guardar una reservación',
         bloques: [{ p: 'El mensaje indica la causa: se cruza con una clase o con algo que ocupa todo el laboratorio, un equipo ya está reservado a esa hora, o es fuera de horario o en fin de semana (la registra el Administrador).' }],
+      },
+      {
+        titulo: 'La app no reconoce el texto de una solicitud FIQ',
+        bloques: [{ p: 'Copie el correo completo, desde «[Aprobación]» hasta «Atentamente». Si aun así no se reconoce (por ejemplo, porque cambió el formato), capture la reservación o la autorización a mano.' }],
       },
       {
         titulo: 'Alguien cerró la pantalla de la terminal',

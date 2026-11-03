@@ -7,6 +7,7 @@ export function PestanasReservaciones() {
       <NavLink to="/reservaciones/calendario">Calendario</NavLink>
       <NavLink to="/reservaciones/nueva">Nueva reservación</NavLink>
       <NavLink to="/reservaciones/lista">Lista</NavLink>
+      <NavLink to="/solicitudes">Importar solicitud FIQ</NavLink>
     </nav>
   );
 }
@@ -50,7 +51,7 @@ export function EstadoReservacion({ r }) {
 export const SELECT_RESERVACION = `id, serie_id, inicio, fin, actividad, ocupa_todo, titulo, responsable, responsable_correo,
   responsable_telefono, usuarios, procedencia, institucion, asignatura, programa_educativo, semestre, num_alumnos,
   num_equipos_trabajo, equipos, materiales, residuos, contacto_emergencia, observaciones, estado, motivo_cancelacion,
-  autorizado_por, creado_en`;
+  autorizado_por, creado_en, folio_solicitud, reactivos, alumnos_pe`;
 
 const dos = (n) => String(n).padStart(2, '0');
 export const hhmm = (ts) => { const d = new Date(ts); return `${dos(d.getHours())}:${dos(d.getMinutes())}`; };

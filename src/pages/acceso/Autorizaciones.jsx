@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase, mensajeError } from '../../supabase';
 import { useSesion } from '../../auth';
 import { Aviso, Etiqueta } from '../../componentes';
@@ -30,7 +31,7 @@ export default function Autorizaciones() {
   const hoy = hoyISO();
 
   const cargar = () => supabase.from('autorizaciones_acceso')
-    .select('id, proyecto, fecha_inicio, fecha_fin, activo, solicitante_id, solicitantes(nombre, matricula, correo)')
+    .select('id, proyecto, fecha_inicio, fecha_fin, activo, solicitante_id, folio_solicitud, institucion, solicitantes(nombre, matricula, correo, adscripcion)')
     .order('fecha_fin', { ascending: false })
     .then(({ data, error }) => error ? setMensaje({ tipo: 'error', texto: mensajeError(error) }) : setLista(data));
   useEffect(() => { cargar(); }, []);
@@ -42,7 +43,7 @@ export default function Autorizaciones() {
       .map((a) => ({ ...a, est: estado(a, hoy) }))
       .filter((a) => filtro === 'todas' || a.est.clave === filtro)
       .filter((a) => !q || normalizar([a.solicitantes.nombre, a.solicitantes.matricula,
-        a.solicitantes.correo, a.proyecto].join(' ')).includes(q));
+        a.solicitantes.correo, a.proyecto, a.folio_solicitud, a.institucion].join(' ')).includes(q));
   }, [lista, filtro, buscar, hoy]);
 
   const campo = (k) => (e) => setForm({ ...form, [k]: e.target.value });
@@ -106,13 +107,14 @@ export default function Autorizaciones() {
                   {visibles.map((a) => (
                     <tr key={a.id} className={a.activo ? '' : 'inactivo'}>
                       <td><strong>{a.solicitantes.nombre}</strong><br />
-                        <span className="tenue">{a.solicitantes.matricula} · {a.solicitantes.correo}</span></td>
-                      <td>{a.proyecto}</td>
+                        <span className="tenue">{a.solicitantes.matricula ?? (a.institucion || a.solicitantes.adscripcion || 'Sin matrícula')} · {a.solicitantes.correo}</span></td>
+                      <td>{a.proyecto}{a.folio_solicitud && <><br /><span className="tenue chico">Solicitud FIQ {a.folio_solicitud}</span></>}</td>
                       <td className="sin-salto">{fecha(a.fecha_inicio)}<br />{fecha(a.fecha_fin)}</td>
                       <td><Etiqueta tono={a.est.tono}>{a.est.texto}</Etiqueta></td>
                       {esAdmin && (
                         <td className="der acciones">
-                          <button className="btn btn-chico" onClick={() => editar(a)}>Editar</button>
+                          <button className="btn btn-chico" onClick={() => editar(a)} disabled={!a.solicitantes.matricula}
+                            title={a.solicitantes.matricula ? '' : 'Sin matrícula: revóquela y vuelva a importar la solicitud'}>Editar</button>
                           <button className="btn btn-chico" onClick={() => alternar(a)}>{a.activo ? 'Revocar' : 'Reactivar'}</button>
                         </td>
                       )}
@@ -123,6 +125,7 @@ export default function Autorizaciones() {
             </div>
           )}
           {!esAdmin && <p className="tenue nota">Las autorizaciones las captura el Administrador a partir del correo de solicitud.</p>}
+          {esAdmin && <p className="tenue nota">¿Llegó por el sistema de Laboratorios FIQ? <Link to="/solicitudes">Importe la solicitud</Link> pegando el texto de la aprobación.</p>}
         </section>
 
         {esAdmin && (
