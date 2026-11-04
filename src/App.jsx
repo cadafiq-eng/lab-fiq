@@ -8,6 +8,7 @@ import TiposEquipo from './pages/admin/TiposEquipo';
 import Configuracion from './pages/admin/Configuracion';
 import CargaInicial from './pages/admin/CargaInicial';
 import Reservaciones from './pages/reservaciones/Reservaciones';
+import ImportarSolicitud from './pages/solicitudes/ImportarSolicitud';
 import Acceso from './pages/acceso/Acceso';
 import MiCuenta from './pages/MiCuenta';
 import Equipos from './pages/equipos/Equipos';
@@ -49,6 +50,7 @@ export default function App() {
           <p className="nav-grupo">Operación</p>
           <NavLink to="/acceso">Control de acceso</NavLink>
           <NavLink to="/reservaciones">Reservaciones</NavLink>
+          <NavLink to="/solicitudes">Solicitudes FIQ</NavLink>
           <NavLink to="/equipos">Equipos</NavLink>
           <NavLink to="/prestamos">Préstamos</NavLink>
           <NavLink to="/inventario">Inventario</NavLink>
@@ -77,6 +79,7 @@ export default function App() {
           <Route path="/inicio" element={<Inicio />} />
           <Route path="/acceso/*" element={<Acceso />} />
           <Route path="/reservaciones/*" element={<Reservaciones />} />
+          <Route path="/solicitudes" element={<ImportarSolicitud />} />
           <Route path="/mi-cuenta" element={<MiCuenta />} />
           <Route path="/equipos/*" element={<Equipos />} />
           <Route path="/prestamos/*" element={<Prestamos />} />

@@ -67,6 +67,7 @@ export default function Detalle() {
             {dato('Programa educativo', r.programa_educativo)}
             {dato('Semestre', r.semestre)}
             {dato('Alumnos', r.num_alumnos)}
+            {r.alumnos_pe && dato('Por programa', Object.entries(r.alumnos_pe).filter(([, n]) => n > 0).map(([k, n]) => `${k}: ${n}`).join(' · '))}
             {dato('Equipos de alumnos', r.num_equipos_trabajo)}
             {fuera && <>{dato('Contacto de emergencia', r.contacto_emergencia)}<dt>Fuera de horario</dt><dd>Registrada por el Administrador</dd></>}
           </dl>
@@ -80,6 +81,7 @@ export default function Detalle() {
             {dato('Usuarios', r.usuarios)}
             <dt>Procedencia</dt><dd>{r.procedencia === 'externo' ? <><Etiqueta tono="aviso">Externo</Etiqueta> {r.institucion}</> : 'Interno'}</dd>
             <dt>Registrada</dt><dd>{fechaHora(r.creado_en)}</dd>
+            {dato('Solicitud FIQ', r.folio_solicitud)}
           </dl>
         </section>
         <section className="tarjeta">
@@ -88,6 +90,7 @@ export default function Detalle() {
             <ul className="lista-simple">{equipos.map((e) => <li key={e.id}><Link to={`/equipos/ficha/${e.id}`}>{e.codigo}</Link> · {e.nombre}</li>)}</ul>
           )}
           {r.materiales && <><h3>Materiales e insumos</h3><p className="historial-obs">{r.materiales}</p></>}
+          {r.reactivos && <><h3>Reactivos</h3><p className="historial-obs">{r.reactivos}</p></>}
           <h3>Residuos peligrosos</h3>
           {r.residuos?.length ? <ul className="lista-simple">{r.residuos.map((g) => <li key={g}>{RESIDUOS[g]}</li>)}</ul> : <p className="tenue">No se indicaron.</p>}
           {r.observaciones && <><h3>Observaciones</h3><p className="historial-obs">{r.observaciones}</p></>}

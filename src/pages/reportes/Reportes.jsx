@@ -222,8 +222,9 @@ function ReporteActividades({ desde, hasta }) {
       const m = new Map();
       lista.forEach((x) => {
         const k = clave(x);
-        const g = m.get(k) ?? { x, sesiones: 0, horas: 0, alumnos: 0, equipos: new Set() };
+        const g = m.get(k) ?? { x, sesiones: 0, horas: 0, alumnos: 0, pe: {}, equipos: new Set() };
         g.sesiones += 1; g.horas += h(x); g.alumnos = Math.max(g.alumnos, x.num_alumnos ?? 0);
+        Object.entries(x.alumnos_pe ?? {}).forEach(([pe, n]) => { g.pe[pe] = Math.max(g.pe[pe] ?? 0, Number(n) || 0); });
         (x.equipos ?? []).forEach((e) => datos.equipos[e] && g.equipos.add(datos.equipos[e]));
         m.set(k, g);
       });
@@ -241,7 +242,8 @@ function ReporteActividades({ desde, hasta }) {
       ],
       porAct,
       docencia: agrupar(docencia, (x) => [x.responsable, x.actividad, x.asignatura, x.titulo].join('|')).map((g) => [
-        g.x.responsable, `${NOMBRE_ACT[g.x.actividad]}: ${g.x.titulo}`, `${g.sesiones} (${fmt(g.horas)} h)`, g.alumnos || '',
+        g.x.responsable, `${NOMBRE_ACT[g.x.actividad]}: ${g.x.titulo}`, `${g.sesiones} (${fmt(g.horas)} h)`,
+        [g.alumnos || '', Object.entries(g.pe).filter(([, n]) => n > 0).map(([pe, n]) => `${pe}: ${n}`).join(', ')].filter(Boolean).join(' · '),
         [g.x.semestre && `${g.x.semestre}.º sem`, g.x.asignatura, g.x.programa_educativo].filter(Boolean).join(' / '),
         g.x.procedencia === 'externo' ? `Externo: ${g.x.institucion}` : 'Interno', [...g.equipos].join(', ')]),
       investigacion: agrupar(investigacion, (x) => [x.responsable, x.titulo].join('|')).map((g) => [
@@ -261,8 +263,8 @@ function ReporteActividades({ desde, hasta }) {
       {r.porAct.length > 0 && <section className="tarjeta una-columna seccion-reporte"><h2>Sesiones por tipo de actividad</h2><Barras datos={r.porAct} /></section>}
       <Seccion titulo="Docencia: prácticas, talleres y cursos" archivo={`actividades_docencia_${desde}_${hasta}.csv`}
         nota="Equivale a la sección II del reporte trimestral."
-        encabezados={['Profesor', 'Actividad docente', 'Sesiones (horas)', 'Alumnos', 'Semestre y asignatura', 'Procedencia', 'Equipos utilizados']}
-        numericas={[3]} filas={r.docencia} />
+        encabezados={['Profesor', 'Actividad docente', 'Sesiones (horas)', 'Alumnos por programa', 'Semestre y asignatura', 'Procedencia', 'Equipos utilizados']}
+        filas={r.docencia} />
       <Seccion titulo="Investigación y proyectos" archivo={`actividades_investigacion_${desde}_${hasta}.csv`}
         encabezados={['Responsable', 'Tipo', 'Título', 'Sesiones', 'Horas', 'Procedencia', 'Equipos utilizados']} numericas={[3, 4]} filas={r.investigacion} />
       <Seccion titulo="Vinculación y servicios" archivo={`actividades_vinculacion_${desde}_${hasta}.csv`}

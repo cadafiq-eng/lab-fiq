@@ -24,7 +24,7 @@ src/                   Aplicación web
 2. Ejecutar `supabase/migrations/0002_alta_perfiles.sql`.
    Después, `0003_control_acceso.sql` (fase 2), `0004_equipos.sql` (fase 3) y
    `0005_prestamos_inventario.sql` (fases 4 y 5), `0006_carga_inicial.sql` (fase 6) y
-   `0007_reservaciones.sql` (reservaciones).
+   `0007_reservaciones.sql` (reservaciones) y `0008_solicitudes_fiq.sql` (importar solicitudes FIQ).
    Cada archivo se ejecuta una sola vez y en orden.
 3. Authentication → Users → **Add user**: correo y contraseña del Administrador,
    con «Auto Confirm User».
@@ -102,6 +102,15 @@ Inicie sesión como Administrador → **Personal** → cree:
 - La **terminal** muestra la ocupación de hoy y de la semana sin datos personales, y **Reportes →
   Actividades** resume docencia, investigación y vinculación para el reporte trimestral.
 
+## Solicitudes del sistema de Laboratorios FIQ
+
+Las solicitudes de acceso y de práctica llegan como aprobaciones de Power Automate (Laboratorios FIQ).
+El flujo no es del laboratorio, así que la app no se conecta a él: en **Solicitudes FIQ** se pega el texto
+de la aprobación y la app llena la **reservación** (práctica) o la **autorización de acceso** (acceso),
+con el folio FIQ para no duplicar. Las personas sin matrícula (académicos, externos) quedan como
+personas externas con autorización. Se agregan reactivos y alumnos por programa educativo (IQI, QA, QI,
+IA, IB, IIL) a las reservaciones, que alimentan el reporte de actividades.
+
 ## Uso de préstamos e inventario
 
 - **Préstamos**: a personas con acceso vigente o a personas externas (profesores, otros laboratorios),
@@ -143,4 +152,5 @@ npm run dev
 | 5. Inventario | Artículos con pictogramas, entradas, salidas, pérdidas, ajustes, alertas de existencia y caducidad | Listo |
 | 6. Carga inicial y piloto | Importación desde Excel, reportes imprimibles, guía de uso (app y PDF) | Listo; falta el piloto |
 | Reservaciones | Calendario, series semanales, cruces por clase y por equipo, agenda en la terminal, reporte de actividades | Listo |
+| Solicitudes FIQ | Importación de aprobaciones de Power Automate a reservaciones y autorizaciones | Listo |
 | 7. Cierre | Aviso de privacidad, liberación formal | Pendiente |

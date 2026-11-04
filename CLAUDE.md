@@ -56,6 +56,9 @@ Laboratorios de la FIQ y su Manual de Seguridad. Responsable: Dr. Luis Antonio C
   todo el laboratorio; las demás actividades pueden coincidir salvo «ocupa todo»; un mismo equipo nunca
   se traslapa; fuera de horario o fin de semana, solo el Administrador con contacto de emergencia.
   Series semanales (máx. 26). La terminal ve la agenda con `terminal_agenda` (sin datos personales).
+- Solicitudes FIQ (`0008`): llegan como aprobaciones de Power Automate de laboratorios.fiq (flujo ajeno,
+  sin conector). Se importan pegando el texto (`src/pages/solicitudes/lector.js`); folio FIQ único por
+  autorización y por sesión programada. Sin matrícula → persona externa (`registrar_acceso_solicitud`).
 - Carga inicial: plantillas Excel en `public/plantillas/` (generadas con openpyxl; sin celdas de texto
   vacío, que `read-excel-file` no acepta). Importación atómica con `importar_articulos` e
   `importar_equipos` (solo Administrador).
