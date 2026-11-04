@@ -25,7 +25,8 @@ src/                   Aplicación web
    Después, `0003_control_acceso.sql` (fase 2), `0004_equipos.sql` (fase 3) y
    `0005_prestamos_inventario.sql` (fases 4 y 5), `0006_carga_inicial.sql` (fase 6) y
    `0007_reservaciones.sql` (reservaciones), `0008_solicitudes_fiq.sql` (importar solicitudes FIQ) y
-   `0009_bandeja_solicitudes.sql` (bandeja automática).
+   `0009_bandeja_solicitudes.sql` (bandeja automática) y `0010_reservaciones_varios_dias.sql`
+   (reservaciones de varios días).
    Cada archivo se ejecuta una sola vez y en orden.
 3. Authentication → Users → **Add user**: correo y contraseña del Administrador,
    con «Auto Confirm User».
@@ -132,8 +133,8 @@ Aprobación (Laboratorios FIQ) → correo del laboratorio → flujo del laborato
    **desactivar «Verify JWT»** (Postmark no tiene sesión de Supabase; la protege la clave).
 4. **Postmark** (cuenta del responsable): crear un *Server*; en su *Inbound stream* copiar la
    dirección de entrada (`…@inbound.postmarkapp.com`) y poner como *Webhook URL*
-   `https://lab:CLAVE@<PROYECTO>.supabase.co/functions/v1/recibir-solicitud`
-   (CLAVE = `RECEPTOR_CLAVE`).
+   `https://<PROYECTO>.supabase.co/functions/v1/recibir-solicitud?clave=CLAVE`
+   (CLAVE = `RECEPTOR_CLAVE`, solo letras y números; Postmark rechaza la forma `https://usuario:clave@…`).
 5. **Power Automate (cuenta del laboratorio):** en el flujo, poner esa dirección de Postmark en «Para».
 
 Las solicitudes llegan a **Solicitudes FIQ → Pendientes** (contador en el menú y aviso en Inicio).

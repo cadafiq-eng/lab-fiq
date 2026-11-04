@@ -107,7 +107,7 @@ export default function Terminal() {
             {texto.trim().length < 3 && (
               <>
                 <p className="terminal-hoy-titulo">Hoy en el laboratorio</p>
-                <AgendaTerminal lista={agenda.filter((r) => new Date(r.inicio).toDateString() === new Date().toDateString())} />
+                <AgendaTerminal lista={agenda.filter((r) => { const h = new Date(); h.setHours(0, 0, 0, 0); const m = new Date(h); m.setDate(m.getDate() + 1); return new Date(r.inicio) < m && new Date(r.fin) > h; })} />
                 <button className="btn btn-enlace" onClick={() => setVerSemana(true)}>Ver la semana</button>
               </>
             )}
@@ -180,6 +180,10 @@ export default function Terminal() {
 
 const ACT = { clase: 'Clase', taller_curso: 'Taller / curso', investigacion: 'Investigación', proyecto: 'Proyecto', vinculacion: 'Vinculación', otro: 'Otra' };
 const hm = (t) => new Date(t).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+const dm = (t) => new Date(t).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+// Hora, o fechas y horas si la reservación es de uso continuo (varios días)
+const lapso = (r) => (new Date(r.inicio).toDateString() === new Date(r.fin).toDateString()
+  ? `${hm(r.inicio)}–${hm(r.fin)}` : `${dm(r.inicio)} ${hm(r.inicio)} → ${dm(r.fin)} ${hm(r.fin)}`);
 
 function AgendaTerminal({ lista, porDia }) {
   if (!lista.length) return <p className="tenue">{porDia ? 'No hay reservaciones en los próximos días.' : 'No hay reservaciones para hoy.'}</p>;
@@ -194,7 +198,7 @@ function AgendaTerminal({ lista, porDia }) {
           <div key={i}>
             {titulo}
             <div className="terminal-reserva">
-              <strong>{hm(r.inicio)}–{hm(r.fin)}</strong>
+              <strong>{lapso(r)}</strong>
               <div>
                 <span className={'etiqueta act-' + (r.actividad === 'taller_curso' ? 'taller' : r.actividad)}>{ACT[r.actividad]}</span>{' '}
                 {r.titulo}{r.asignatura ? ` · ${r.asignatura}` : ''}

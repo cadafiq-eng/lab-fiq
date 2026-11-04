@@ -7,6 +7,25 @@ import { diaLocal, fecha, hoyISO } from '../../util';
 import { useConfiguracion } from '../prestamos/comun';
 import { ACTIVIDADES, EtiquetaActividad, PestanasReservaciones, RESIDUOS, SELECT_RESERVACION, fueraDeHorario, horario, hhmm } from './comun';
 
+const MODOS = {
+  uno: 'Un solo día',
+  habil: 'Varios días con el mismo horario, de lunes a viernes',
+  diaria: 'Varios días con el mismo horario, incluido el fin de semana',
+  semanal: 'Cada semana (el mismo día)',
+  continuo: 'Uso continuo: empieza un día y termina otro',
+};
+
+const sumarDia = (iso) => { const d = new Date(iso + 'T12:00'); d.setDate(d.getDate() + 1); return diaLocal(d); };
+
+// Sesiones que generará la serie (igual que registrar_reservacion en la base)
+function contarSesiones(desde, hasta, modo) {
+  let n = 0;
+  for (let d = new Date(desde + 'T12:00'); diaLocal(d) <= hasta; d.setDate(d.getDate() + (modo === 'semanal' ? 7 : 1))) {
+    if (modo !== 'habil' || ![0, 6].includes(d.getDay())) n += 1;
+  }
+  return n;
+}
+
 const VACIO = {
   actividad: 'clase', ocupa_todo: true, titulo: '', responsable: '', responsable_correo: '', responsable_telefono: '',
   usuarios: '', procedencia: 'interno', institucion: '', asignatura: '', programa_educativo: '', semestre: '',
@@ -34,8 +53,11 @@ export default function FormReservacion() {
   const [dia, setDia] = useState(importada?.dia || params.get('fecha') || hoyISO());
   const [horaIni, setHoraIni] = useState(importada?.horaIni || '09:00');
   const [horaFin, setHoraFin] = useState(importada?.horaFin || '11:00');
-  const [repetir, setRepetir] = useState(false);
+  // Duración: 'uno' (un día), 'habil' / 'diaria' (varios días, mismo horario),
+  // 'semanal' (cada semana) o 'continuo' (empieza un día y termina otro)
+  const [modo, setModo] = useState('uno');
   const [hasta, setHasta] = useState('');
+  const [diaFin, setDiaFin] = useState('');
   const [equiposSel, setEquiposSel] = useState(importada?.equipos ?? []);
   const [residuos, setResiduos] = useState(importada?.residuos ?? []);
   const [equipos, setEquipos] = useState([]);
@@ -58,23 +80,28 @@ export default function FormReservacion() {
       const t = (v) => (v == null ? '' : String(v));
       setF(Object.fromEntries(Object.keys(VACIO).map((k) => [k, k === 'ocupa_todo' ? data[k] : t(data[k])])));
       setDia(diaLocal(data.inicio)); setHoraIni(hhmm(data.inicio)); setHoraFin(hhmm(data.fin));
+      if (diaLocal(data.fin) !== diaLocal(data.inicio)) { setModo('continuo'); setDiaFin(diaLocal(data.fin)); }
       setEquiposSel(data.equipos ?? []); setResiduos(data.residuos ?? []);
       setCargado(true);
     });
   }, [id]);
 
-  // Ocupación del día elegido, para ver cruces antes de guardar
+  const continuo = modo === 'continuo';
+  const ultimoDia = continuo && diaFin > dia ? diaFin : dia;
+
+  // Ocupación del día (o los días, en uso continuo) elegido, para ver cruces antes de guardar
   useEffect(() => {
     if (!dia) return;
-    const ini = new Date(dia + 'T00:00'); const fin = new Date(dia + 'T00:00'); fin.setDate(fin.getDate() + 1);
+    const ini = new Date(dia + 'T00:00'); const fin = new Date(ultimoDia + 'T00:00'); fin.setDate(fin.getDate() + 1);
     supabase.from('reservaciones').select('id, inicio, fin, actividad, titulo, ocupa_todo, equipos')
-      .eq('estado', 'programada').gte('inicio', ini.toISOString()).lt('inicio', fin.toISOString()).order('inicio')
+      .eq('estado', 'programada').gt('fin', ini.toISOString()).lt('inicio', fin.toISOString()).order('inicio')
       .then(({ data }) => setDelDia((data ?? []).filter((r) => r.id !== id)));
-  }, [dia, id]);
+  }, [dia, ultimoDia, id]);
 
   const campo = (k) => (e) => setF({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
   const inicio = dia && horaIni ? new Date(`${dia}T${horaIni}`) : null;
-  const fin = dia && horaFin ? new Date(`${dia}T${horaFin}`) : null;
+  const fin = dia && horaFin ? new Date(`${ultimoDia}T${horaFin}`) : null;
+  const repite = ['habil', 'diaria', 'semanal'].includes(modo);
   const fuera = fueraDeHorario(inicio, fin, config);
   const esClase = f.actividad === 'clase';
   const docencia = esClase || f.actividad === 'taller_curso';
@@ -90,7 +117,7 @@ export default function FormReservacion() {
         : comunes.length ? `mismo equipo: ${comunes.map(nombreEquipo).join(', ')}` : null;
       return { r, motivo };
     });
-  }, [delDia, horaIni, horaFin, dia, ocupaTodo, equiposSel, equipos]);
+  }, [delDia, horaIni, horaFin, dia, ultimoDia, ocupaTodo, equiposSel, equipos]);
   const bloqueantes = cruces.filter((c) => c.motivo);
 
   function cambiarActividad(e) {
@@ -100,6 +127,7 @@ export default function FormReservacion() {
 
   async function guardar(e) {
     e.preventDefault();
+    if (continuo && !(diaFin > dia)) return setMensaje({ tipo: 'error', texto: 'En uso continuo, la fecha de término debe ser posterior a la de inicio.' });
     if (!(fin > inicio)) return setMensaje({ tipo: 'error', texto: 'La hora de término debe ser posterior a la de inicio.' });
     setOcupado(true); setMensaje(null);
     const datos = {
@@ -118,7 +146,7 @@ export default function FormReservacion() {
       destino = `/reservaciones/detalle/${id}`;
     } else {
       let n;
-      ({ data: n, error } = await supabase.rpc('registrar_reservacion', { p: { ...datos, ...extra }, p_hasta: repetir ? hasta : null }));
+      ({ data: n, error } = await supabase.rpc('registrar_reservacion', { p: { ...datos, ...extra }, p_hasta: repite ? hasta : null, p_frecuencia: repite ? modo : 'semanal' }));
       destino = `/reservaciones/calendario?semana=${dia}`;
       if (!error && n > 1) destino += `&series=${n}`;
     }
@@ -128,7 +156,7 @@ export default function FormReservacion() {
   }
 
   if (!cargado) return <><h1>Reservaciones</h1><Aviso mensaje={mensaje} /><p className="tenue">Cargando…</p></>;
-  const sesiones = repetir && hasta >= dia ? Math.floor((new Date(hasta) - new Date(dia)) / (7 * 86400000)) + 1 : 1;
+  const sesiones = repite && hasta >= dia ? contarSesiones(dia, hasta, modo) : 1;
 
   return (
     <>
@@ -238,33 +266,56 @@ export default function FormReservacion() {
         <div className="columna">
           <section className="tarjeta formulario">
             <h2>¿Cuándo?</h2>
-            <label>Fecha<input type="date" value={dia} onChange={(e) => setDia(e.target.value)} required /></label>
-            <div className="fila-campos">
-              <label>De<input type="time" value={horaIni} step="900" onChange={(e) => setHoraIni(e.target.value)} required /></label>
-              <label>A<input type="time" value={horaFin} step="900" onChange={(e) => setHoraFin(e.target.value)} required /></label>
-            </div>
-            {!id && (
+            <fieldset>
+              <legend>Duración</legend>
+              {Object.entries(MODOS).filter(([k]) => !id || ['uno', 'continuo'].includes(k)).map(([k, t]) => (
+                <label key={k} className="casilla"><input type="radio" checked={modo === k}
+                  onChange={() => { setModo(k); if (k === 'continuo' && !(diaFin > dia)) setDiaFin(sumarDia(dia)); }} />{t}</label>
+              ))}
+            </fieldset>
+            {continuo ? (
               <>
-                <label className="casilla"><input type="checkbox" checked={repetir} onChange={(e) => setRepetir(e.target.checked)} />Repetir cada semana</label>
-                {repetir && (
-                  <label>Hasta el
-                    <input type="date" value={hasta} min={dia} onChange={(e) => setHasta(e.target.value)} required />
-                    <span className="tenue nota">{sesiones} sesión(es), una por semana (máximo 26). Si una se cruza, no se guarda ninguna.</span>
-                  </label>
-                )}
+                <div className="fila-campos">
+                  <label>Empieza el<input type="date" value={dia} onChange={(e) => setDia(e.target.value)} required /></label>
+                  <label>a las<input type="time" value={horaIni} step="900" onChange={(e) => setHoraIni(e.target.value)} required /></label>
+                </div>
+                <div className="fila-campos">
+                  <label>Termina el<input type="date" value={diaFin} min={sumarDia(dia)} onChange={(e) => setDiaFin(e.target.value)} required /></label>
+                  <label>a las<input type="time" value={horaFin} step="900" onChange={(e) => setHoraFin(e.target.value)} required /></label>
+                </div>
               </>
+            ) : (
+              <>
+                <label>{repite ? 'Primer día' : 'Fecha'}<input type="date" value={dia} onChange={(e) => setDia(e.target.value)} required /></label>
+                <div className="fila-campos">
+                  <label>De<input type="time" value={horaIni} step="900" onChange={(e) => setHoraIni(e.target.value)} required /></label>
+                  <label>A<input type="time" value={horaFin} step="900" onChange={(e) => setHoraFin(e.target.value)} required /></label>
+                </div>
+              </>
+            )}
+            {repite && (
+              <label>Hasta el
+                <input type="date" value={hasta} min={dia} onChange={(e) => setHasta(e.target.value)} required />
+                <span className="tenue nota">{sesiones} sesión(es) de {horaIni}–{horaFin}{modo === 'habil' ? ', de lunes a viernes' : modo === 'diaria' ? ', todos los días' : ', una por semana'}
+                  {' '}(máximo {modo === 'semanal' ? 26 : 60}). Si una se cruza, no se guarda ninguna.
+                  {modo === 'diaria' && !esAdmin && ' Las sesiones en sábado o domingo solo las registra el Administrador.'}</span>
+              </label>
+            )}
+            {continuo && (
+              <p className="tenue nota">Para un trabajo o equipo que sigue de un día a otro sin interrupción (p. ej., una fermentación o un secado de 48 h).
+                Pasa fuera del horario, así que la registra el Administrador con contacto de emergencia. Máximo 14 días.</p>
             )}
             {fuera && (
               esAdmin ? (
                 <>
                   <p className="aviso aviso-alerta nota">Fuera del horario ({(config.hora_apertura ?? '08:00').slice(0, 5)}–{(config.hora_cierre ?? '20:00').slice(0, 5)})
-                    o en fin de semana. Conviene que trabajen al menos dos personas y avisar al Secretario Administrativo (formato de acceso en fin de semana).</p>
+                    o en fin de semana{continuo ? ' (uso continuo)' : ''}. Conviene que trabajen al menos dos personas y avisar al Secretario Administrativo (formato de acceso en fin de semana).</p>
                   <label>Contacto de emergencia (nombre y teléfono)
                     <input value={f.contacto_emergencia} onChange={campo('contacto_emergencia')} required />
                   </label>
                 </>
               ) : (
-                <p className="aviso aviso-error nota">Fuera del horario del laboratorio o en fin de semana: esta reservación la registra el Administrador.</p>
+                <p className="aviso aviso-error nota">{continuo ? 'Uso continuo de varios días' : 'Fuera del horario del laboratorio o en fin de semana'}: esta reservación la registra el Administrador.</p>
               )
             )}
             {bloqueantes.map(({ r, motivo }) => (
@@ -276,7 +327,7 @@ export default function FormReservacion() {
           </section>
 
           <section className="tarjeta">
-            <h2>Ese día · {dia ? fecha(dia) : ''}</h2>
+            <h2>{continuo && diaFin > dia ? `Esos días · ${fecha(dia)} al ${fecha(diaFin)}` : `${repite ? 'El primer día' : 'Ese día'} · ${dia ? fecha(dia) : ''}`}</h2>
             {delDia.length === 0 ? <p className="tenue">Sin otras reservaciones.</p> : (
               <ul className="lista-simple lista-dia">
                 {delDia.map((r) => {

@@ -344,6 +344,7 @@ tr.fila-error td { background: var(--mal-fondo); }
 .cal-evento span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cal-evento .cal-detalle { opacity: .8; }
 .cal-exclusiva { border-left-width: 6px; }
+.cal-continua { background-image: repeating-linear-gradient(135deg, transparent 0 8px, rgba(0,0,0,.06) 8px 16px); }
 .cal-cancelada { opacity: .5; text-decoration: line-through; }
 .lista-dia { list-style: none; padding: 0; }
 .lista-dia li { padding: 6px 0; border-bottom: 1px solid var(--borde); }

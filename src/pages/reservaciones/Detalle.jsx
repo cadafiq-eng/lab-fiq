@@ -5,7 +5,7 @@ import { useSesion } from '../../auth';
 import { Aviso, Etiqueta, Modal } from '../../componentes';
 import { diaLocal, fechaHora } from '../../util';
 import { useConfiguracion } from '../prestamos/comun';
-import { ACTIVIDADES, EstadoReservacion, RESIDUOS, SELECT_RESERVACION, diaTexto, fueraDeHorario, horario } from './comun';
+import { ACTIVIDADES, EstadoReservacion, RESIDUOS, SELECT_RESERVACION, diaTexto, fueraDeHorario, horario, mismoDia } from './comun';
 
 export default function Detalle() {
   const { id } = useParams();
@@ -43,7 +43,7 @@ export default function Detalle() {
       <div className="encabezado">
         <div>
           <h1>{r.titulo}</h1>
-          <p className="tenue">{diaTexto(new Date(r.inicio))} {new Date(r.inicio).getFullYear()} · {horario(r)}</p>
+          <p className="tenue">{mismoDia(r) ? <>{diaTexto(new Date(r.inicio))} {new Date(r.inicio).getFullYear()} · {horario(r)}</> : <>Uso continuo: {horario(r)} {new Date(r.fin).getFullYear()}</>}</p>
         </div>
         {puedeModificar && (
           <div className="fila-botones">
@@ -54,7 +54,7 @@ export default function Detalle() {
       </div>
       <Aviso mensaje={mensaje} />
       {r.estado === 'programada' && fuera && !esAdmin && (
-        <p className="aviso aviso-alerta">Es una reservación fuera de horario o en fin de semana: solo el Administrador la modifica.</p>
+        <p className="aviso aviso-alerta">Es una reservación fuera de horario, en fin de semana o de uso continuo: solo el Administrador la modifica.</p>
       )}
       <div className="dos-columnas">
         <section className="tarjeta">
@@ -97,7 +97,7 @@ export default function Detalle() {
         </section>
         {serie.length > 1 && (
           <section className="tarjeta">
-            <h2>Sesiones de la serie semanal</h2>
+            <h2>Sesiones de la serie</h2>
             <ul className="lista-simple lista-dia">
               {serie.map((s) => (
                 <li key={s.id}>

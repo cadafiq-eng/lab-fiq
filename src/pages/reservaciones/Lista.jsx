@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase, mensajeError } from '../../supabase';
 import { Aviso, Etiqueta } from '../../componentes';
 import { descargarCSV, diaLocal, fecha, hoyISO, normalizar } from '../../util';
-import { ACTIVIDADES, EstadoReservacion, EtiquetaActividad, PestanasReservaciones, RESIDUOS, horario } from './comun';
+import { ACTIVIDADES, EstadoReservacion, EtiquetaActividad, PestanasReservaciones, RESIDUOS, hhmm, horario } from './comun';
 
 export default function Lista() {
   const navegar = useNavigate();
@@ -25,7 +25,7 @@ export default function Lista() {
     if (!desde || !hasta) return;
     setLista(null);
     const fin = new Date(hasta + 'T00:00'); fin.setDate(fin.getDate() + 1);
-    let q = supabase.from('reservaciones').select('*').gte('inicio', new Date(desde + 'T00:00').toISOString())
+    let q = supabase.from('reservaciones').select('*').gt('fin', new Date(desde + 'T00:00').toISOString())
       .lt('inicio', fin.toISOString()).order('inicio').limit(5000);
     if (actividad) q = q.eq('actividad', actividad);
     if (!verCanceladas) q = q.eq('estado', 'programada');
@@ -40,10 +40,10 @@ export default function Lista() {
 
   function exportar() {
     descargarCSV(`reservaciones_${desde}_${hasta}.csv`,
-      ['Fecha', 'Inicio', 'Fin', 'Horas', 'Actividad', 'Título', 'Responsable', 'Correo', 'Teléfono', 'Usuarios', 'Procedencia', 'Institución',
+      ['Fecha', 'Inicio', 'Fecha de término', 'Fin', 'Horas', 'Actividad', 'Título', 'Responsable', 'Correo', 'Teléfono', 'Usuarios', 'Procedencia', 'Institución',
         'Asignatura', 'Programa educativo', 'Semestre', 'Alumnos', 'Equipos de alumnos', 'Ocupa todo el laboratorio', 'Equipos reservados',
         'Materiales', 'Reactivos', 'Alumnos por programa', 'Solicitud FIQ', 'Residuos', 'Contacto de emergencia', 'Observaciones', 'Estado', 'Motivo de cancelación'],
-      visibles.map((r) => [fecha(diaLocal(r.inicio)), horario(r).split('–')[0], horario(r).split('–')[1],
+      visibles.map((r) => [fecha(diaLocal(r.inicio)), hhmm(r.inicio), fecha(diaLocal(r.fin)), hhmm(r.fin),
         ((new Date(r.fin) - new Date(r.inicio)) / 3600000).toFixed(2), ACTIVIDADES[r.actividad]?.corto, r.titulo, r.responsable,
         r.responsable_correo, r.responsable_telefono, r.usuarios, r.procedencia, r.institucion, r.asignatura, r.programa_educativo,
         r.semestre, r.num_alumnos, r.num_equipos_trabajo, r.ocupa_todo ? 'Sí' : 'No',
