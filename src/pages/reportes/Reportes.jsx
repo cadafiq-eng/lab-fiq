@@ -5,6 +5,7 @@ import { descargarCSV, diaLocal, fecha, fechaHora, hoyISO } from '../../util';
 
 const TIPOS = {
   uso: 'Uso del laboratorio',
+  actividades: 'Actividades (reservaciones)',
   inventario: 'Inventario y consumo',
   prestamos: 'Préstamos',
 };
@@ -61,6 +62,7 @@ export default function Reportes() {
       </header>
 
       {tipo === 'uso' && <ReporteUso desde={desde} hasta={hasta} />}
+      {tipo === 'actividades' && <ReporteActividades desde={desde} hasta={hasta} />}
       {tipo === 'inventario' && <ReporteInventario desde={desde} hasta={hasta} />}
       {tipo === 'prestamos' && <ReportePrestamos desde={desde} hasta={hasta} />}
     </>
@@ -191,6 +193,81 @@ function ReporteUso({ desde, hasta }) {
       <Seccion titulo="Por persona" archivo={`uso_por_persona_${desde}_${hasta}.csv`}
         nota="Las horas solo cuentan visitas con salida registrada."
         encabezados={['Nombre', 'Matrícula', 'Visitas', 'Horas', 'Sin salida', 'Última visita']} numericas={[2, 3, 4]} filas={r.personas} />
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------
+// Actividades (reservaciones): sigue las secciones II y III del reporte
+// trimestral (docencia; servicios y vinculación) y agrega investigación.
+// ---------------------------------------------------------------------
+const NOMBRE_ACT = { clase: 'Clase', taller_curso: 'Taller o curso', investigacion: 'Investigación', proyecto: 'Proyecto', vinculacion: 'Vinculación o servicio', otro: 'Otra' };
+
+function ReporteActividades({ desde, hasta }) {
+  const [datos, error] = useConsulta(async () => {
+    const [a, b] = rango(desde, hasta);
+    const [r, e] = await Promise.all([
+      supabase.from('reservaciones').select('*').gte('inicio', a).lt('inicio', b).order('inicio').limit(20000),
+      supabase.from('equipos').select('id, nombre'),
+    ]);
+    return { res: exigir(r), equipos: Object.fromEntries(exigir(e).map((x) => [x.id, x.nombre])) };
+  }, [desde, hasta]);
+
+  const r = useMemo(() => {
+    if (!datos) return null;
+    const ahora = new Date();
+    const hechas = datos.res.filter((x) => x.estado === 'programada' && new Date(x.inicio) <= ahora);
+    const h = (x) => (new Date(x.fin) - new Date(x.inicio)) / 3600000;
+    const agrupar = (lista, clave) => {
+      const m = new Map();
+      lista.forEach((x) => {
+        const k = clave(x);
+        const g = m.get(k) ?? { x, sesiones: 0, horas: 0, alumnos: 0, equipos: new Set() };
+        g.sesiones += 1; g.horas += h(x); g.alumnos = Math.max(g.alumnos, x.num_alumnos ?? 0);
+        (x.equipos ?? []).forEach((e) => datos.equipos[e] && g.equipos.add(datos.equipos[e]));
+        m.set(k, g);
+      });
+      return [...m.values()].sort((p, q) => q.horas - p.horas);
+    };
+    const docencia = hechas.filter((x) => ['clase', 'taller_curso'].includes(x.actividad));
+    const investigacion = hechas.filter((x) => ['investigacion', 'proyecto', 'otro'].includes(x.actividad));
+    const vinculacion = hechas.filter((x) => x.actividad === 'vinculacion');
+    const porAct = Object.keys(NOMBRE_ACT).map((k) => [NOMBRE_ACT[k], hechas.filter((x) => x.actividad === k).length]).filter(([, v]) => v > 0);
+    return {
+      indicadores: [
+        [hechas.length, 'sesiones realizadas'], [fmt(hechas.reduce((s, x) => s + h(x), 0)), 'horas de uso'],
+        [docencia.length, 'sesiones de docencia'], [hechas.filter((x) => x.procedencia === 'externo').length, 'sesiones de usuarios externos'],
+        [datos.res.filter((x) => x.estado === 'cancelada').length, 'canceladas'],
+      ],
+      porAct,
+      docencia: agrupar(docencia, (x) => [x.responsable, x.actividad, x.asignatura, x.titulo].join('|')).map((g) => [
+        g.x.responsable, `${NOMBRE_ACT[g.x.actividad]}: ${g.x.titulo}`, `${g.sesiones} (${fmt(g.horas)} h)`, g.alumnos || '',
+        [g.x.semestre && `${g.x.semestre}.º sem`, g.x.asignatura, g.x.programa_educativo].filter(Boolean).join(' / '),
+        g.x.procedencia === 'externo' ? `Externo: ${g.x.institucion}` : 'Interno', [...g.equipos].join(', ')]),
+      investigacion: agrupar(investigacion, (x) => [x.responsable, x.titulo].join('|')).map((g) => [
+        g.x.responsable, NOMBRE_ACT[g.x.actividad], g.x.titulo, g.sesiones, fmt(g.horas),
+        g.x.procedencia === 'externo' ? `Externo: ${g.x.institucion}` : 'Interno', [...g.equipos].join(', ')]),
+      vinculacion: agrupar(vinculacion, (x) => [x.responsable, x.titulo, x.institucion].join('|')).map((g) => [
+        g.x.titulo, g.x.responsable, g.x.procedencia === 'externo' ? `Externo: ${g.x.institucion}` : 'Interno', g.sesiones, fmt(g.horas), [...g.equipos].join(', ')]),
+    };
+  }, [datos]);
+
+  if (error) return <Aviso mensaje={{ tipo: 'error', texto: error }} />;
+  if (!r) return <p className="tenue">Cargando…</p>;
+  return (
+    <>
+      <Indicadores lista={r.indicadores} />
+      <p className="tenue nota">Cuenta las reservaciones programadas ya iniciadas en el periodo; las canceladas no suman horas.</p>
+      {r.porAct.length > 0 && <section className="tarjeta una-columna seccion-reporte"><h2>Sesiones por tipo de actividad</h2><Barras datos={r.porAct} /></section>}
+      <Seccion titulo="Docencia: prácticas, talleres y cursos" archivo={`actividades_docencia_${desde}_${hasta}.csv`}
+        nota="Equivale a la sección II del reporte trimestral."
+        encabezados={['Profesor', 'Actividad docente', 'Sesiones (horas)', 'Alumnos', 'Semestre y asignatura', 'Procedencia', 'Equipos utilizados']}
+        numericas={[3]} filas={r.docencia} />
+      <Seccion titulo="Investigación y proyectos" archivo={`actividades_investigacion_${desde}_${hasta}.csv`}
+        encabezados={['Responsable', 'Tipo', 'Título', 'Sesiones', 'Horas', 'Procedencia', 'Equipos utilizados']} numericas={[3, 4]} filas={r.investigacion} />
+      <Seccion titulo="Vinculación y servicios" archivo={`actividades_vinculacion_${desde}_${hasta}.csv`}
+        nota="Corresponde a la sección III del reporte trimestral."
+        encabezados={['Servicio', 'Responsable', 'Usuario', 'Sesiones', 'Horas', 'Equipos utilizados']} numericas={[3, 4]} filas={r.vinculacion} />
     </>
   );
 }

@@ -52,6 +52,10 @@ Laboratorios de la FIQ y su Manual de Seguridad. Responsable: Dr. Luis Antonio C
   vigente o personas externas registradas (`solicitantes.externo`).
 - Inventario: consumibles (salida) y retornables (préstamo). La existencia solo cambia con
   movimientos. Pictogramas NOM-018-STPS-2015.
+- Reservaciones (`0007`): las registra el personal y quedan programadas sin aprobación. Una clase ocupa
+  todo el laboratorio; las demás actividades pueden coincidir salvo «ocupa todo»; un mismo equipo nunca
+  se traslapa; fuera de horario o fin de semana, solo el Administrador con contacto de emergencia.
+  Series semanales (máx. 26). La terminal ve la agenda con `terminal_agenda` (sin datos personales).
 - Carga inicial: plantillas Excel en `public/plantillas/` (generadas con openpyxl; sin celdas de texto
   vacío, que `read-excel-file` no acepta). Importación atómica con `importar_articulos` e
   `importar_equipos` (solo Administrador).
