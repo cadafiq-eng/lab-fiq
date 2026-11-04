@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import { Etiqueta } from '../../componentes';
 
 export function PestanasReservaciones() {
@@ -10,6 +10,22 @@ export function PestanasReservaciones() {
       <NavLink to="/solicitudes">Importar solicitud FIQ</NavLink>
     </nav>
   );
+}
+
+// Conmutador Semana / Mes del calendario; recuerda la última vista en este navegador
+export function CambiarVista({ vista, fecha }) {
+  const recordar = (v) => { try { localStorage.setItem('lab-vista-calendario', v); } catch { /* sin almacenamiento */ } };
+  return (
+    <div className="conmutador" role="group" aria-label="Vista del calendario">
+      <Link className={'btn btn-chico' + (vista === 'semana' ? ' activo' : '')} onClick={() => recordar('semana')}
+        to={`/reservaciones/calendario?vista=semana&semana=${fecha}`}>Semana</Link>
+      <Link className={'btn btn-chico' + (vista === 'mes' ? ' activo' : '')} onClick={() => recordar('mes')}
+        to={`/reservaciones/calendario?vista=mes&mes=${fecha.slice(0, 7)}`}>Mes</Link>
+    </div>
+  );
+}
+export function vistaRecordada() {
+  try { return localStorage.getItem('lab-vista-calendario') === 'mes' ? 'mes' : 'semana'; } catch { return 'semana'; }
 }
 
 // Tipos de actividad. Los nombres siguen el reporte trimestral

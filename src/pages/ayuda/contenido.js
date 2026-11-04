@@ -106,7 +106,7 @@ export const CAPITULOS = [
       {
         titulo: 'Calendario',
         bloques: [
-          { p: 'Menú → Reservaciones muestra la semana con un color por tipo de actividad: clase, taller o curso, investigación, proyecto, vinculación u otra. Use «Anterior» y «Siguiente» para cambiar de semana; haga clic en una reservación para ver el detalle, o doble clic en un día para reservarlo.' },
+          { p: 'Menú → Reservaciones muestra la semana con un color por tipo de actividad: clase, taller o curso, investigación, proyecto, vinculación u otra. Con los botones «Semana» y «Mes» cambia entre la vista semanal (por horas) y la mensual (todos los días del mes); el navegador recuerda la última que usó. Use «Anterior» y «Siguiente» para avanzar; haga clic en una reservación para ver el detalle, o doble clic en un día para reservarlo. En la vista mensual, el número del día abre esa semana y «y N más» aparece cuando hay más de cuatro reservaciones.' },
           { p: 'En «Lista» se consultan las reservaciones de un periodo con filtros y búsqueda, y se exportan a CSV.' },
         ],
       },
