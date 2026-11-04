@@ -5,12 +5,13 @@ import { useSesion } from '../../auth';
 import { Aviso, Etiqueta } from '../../componentes';
 import { diaLocal, fecha, hoyISO } from '../../util';
 import { useConfiguracion } from '../prestamos/comun';
-import { ACTIVIDADES, EtiquetaActividad, PestanasReservaciones, RESIDUOS, SELECT_RESERVACION, fueraDeHorario, horario, hhmm } from './comun';
+import { ACTIVIDADES, EtiquetaActividad, PestanasReservaciones, RESIDUOS, SELECT_RESERVACION, fueraDeHorario, horario, hhmm, mismoDia } from './comun';
 
 const MODOS = {
   uno: 'Un solo día',
   habil: 'Varios días con el mismo horario, de lunes a viernes',
   diaria: 'Varios días con el mismo horario, incluido el fin de semana',
+  distintos: 'Varios días con horario distinto',
   semanal: 'Cada semana (el mismo día)',
   continuo: 'Uso continuo: empieza un día y termina otro',
 };
@@ -58,6 +59,7 @@ export default function FormReservacion() {
   const [modo, setModo] = useState('uno');
   const [hasta, setHasta] = useState('');
   const [diaFin, setDiaFin] = useState('');
+  const [filas, setFilas] = useState([]);   // modo 'distintos': [{ dia, ini, fin }]
   const [equiposSel, setEquiposSel] = useState(importada?.equipos ?? []);
   const [residuos, setResiduos] = useState(importada?.residuos ?? []);
   const [equipos, setEquipos] = useState([]);
@@ -87,22 +89,31 @@ export default function FormReservacion() {
   }, [id]);
 
   const continuo = modo === 'continuo';
+  const distintos = modo === 'distintos';
   const ultimoDia = continuo && diaFin > dia ? diaFin : dia;
+  // Días que abarca lo que se va a reservar (para ver la ocupación)
+  const diasPlan = distintos ? filas.map((x) => x.dia).filter(Boolean).sort() : [dia, ultimoDia];
+  const desdeQ = diasPlan[0] || dia;
+  const hastaQ = diasPlan[diasPlan.length - 1] || dia;
 
-  // Ocupación del día (o los días, en uso continuo) elegido, para ver cruces antes de guardar
+  // Ocupación de los días elegidos, para ver cruces antes de guardar
   useEffect(() => {
-    if (!dia) return;
-    const ini = new Date(dia + 'T00:00'); const fin = new Date(ultimoDia + 'T00:00'); fin.setDate(fin.getDate() + 1);
+    if (!desdeQ) return;
+    const ini = new Date(desdeQ + 'T00:00'); const fin = new Date(hastaQ + 'T00:00'); fin.setDate(fin.getDate() + 1);
     supabase.from('reservaciones').select('id, inicio, fin, actividad, titulo, ocupa_todo, equipos')
       .eq('estado', 'programada').gt('fin', ini.toISOString()).lt('inicio', fin.toISOString()).order('inicio')
       .then(({ data }) => setDelDia((data ?? []).filter((r) => r.id !== id)));
-  }, [dia, ultimoDia, id]);
+  }, [desdeQ, hastaQ, id]);
 
   const campo = (k) => (e) => setF({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
   const inicio = dia && horaIni ? new Date(`${dia}T${horaIni}`) : null;
   const fin = dia && horaFin ? new Date(`${ultimoDia}T${horaFin}`) : null;
   const repite = ['habil', 'diaria', 'semanal'].includes(modo);
-  const fuera = fueraDeHorario(inicio, fin, config);
+  // Sesiones que se van a guardar (en 'habil', 'diaria' y 'semanal' solo se revisa la primera; la base revisa todas)
+  const plan = distintos
+    ? filas.filter((x) => x.dia && x.ini && x.fin).map((x) => ({ inicio: new Date(`${x.dia}T${x.ini}`), fin: new Date(`${x.dia}T${x.fin}`) }))
+    : inicio && fin ? [{ inicio, fin }] : [];
+  const fuera = plan.some((x) => fueraDeHorario(x.inicio, x.fin, config));
   const esClase = f.actividad === 'clase';
   const docencia = esClase || f.actividad === 'taller_curso';
   const ocupaTodo = esClase || f.ocupa_todo;
@@ -110,14 +121,14 @@ export default function FormReservacion() {
 
   // Cruces que la base va a rechazar, para avisar antes
   const cruces = useMemo(() => {
-    if (!inicio || !fin || fin <= inicio) return [];
-    return delDia.filter((r) => new Date(r.inicio) < fin && new Date(r.fin) > inicio).map((r) => {
+    const validas = plan.filter((x) => x.fin > x.inicio);
+    return delDia.filter((r) => validas.some((x) => new Date(r.inicio) < x.fin && new Date(r.fin) > x.inicio)).map((r) => {
       const comunes = (r.equipos ?? []).filter((e) => equiposSel.includes(e));
       const motivo = ocupaTodo || r.ocupa_todo ? 'ocupa todo el laboratorio'
         : comunes.length ? `mismo equipo: ${comunes.map(nombreEquipo).join(', ')}` : null;
       return { r, motivo };
     });
-  }, [delDia, horaIni, horaFin, dia, ultimoDia, ocupaTodo, equiposSel, equipos]);
+  }, [delDia, horaIni, horaFin, dia, ultimoDia, filas, modo, ocupaTodo, equiposSel, equipos]);
   const bloqueantes = cruces.filter((c) => c.motivo);
 
   function cambiarActividad(e) {
@@ -127,8 +138,12 @@ export default function FormReservacion() {
 
   async function guardar(e) {
     e.preventDefault();
+    if (distintos) {
+      if (filas.some((x) => !x.dia || !x.ini || !x.fin)) return setMensaje({ tipo: 'error', texto: 'Cada día necesita fecha, hora de inicio y hora de término.' });
+      if (plan.some((x) => !(x.fin > x.inicio))) return setMensaje({ tipo: 'error', texto: 'En cada día, la hora de término debe ser posterior a la de inicio.' });
+    }
     if (continuo && !(diaFin > dia)) return setMensaje({ tipo: 'error', texto: 'En uso continuo, la fecha de término debe ser posterior a la de inicio.' });
-    if (!(fin > inicio)) return setMensaje({ tipo: 'error', texto: 'La hora de término debe ser posterior a la de inicio.' });
+    if (!distintos && !(fin > inicio)) return setMensaje({ tipo: 'error', texto: 'La hora de término debe ser posterior a la de inicio.' });
     setOcupado(true); setMensaje(null);
     const datos = {
       ...f, ocupa_todo: ocupaTodo, inicio: inicio.toISOString(), fin: fin.toISOString(),
@@ -146,8 +161,13 @@ export default function FormReservacion() {
       destino = `/reservaciones/detalle/${id}`;
     } else {
       let n;
-      ({ data: n, error } = await supabase.rpc('registrar_reservacion', { p: { ...datos, ...extra }, p_hasta: repite ? hasta : null, p_frecuencia: repite ? modo : 'semanal' }));
-      destino = `/reservaciones/calendario?semana=${dia}`;
+      if (distintos) {
+        ({ data: n, error } = await supabase.rpc('registrar_reservacion_sesiones', { p: { ...datos, ...extra },
+          p_sesiones: plan.map((x) => ({ inicio: x.inicio.toISOString(), fin: x.fin.toISOString() })) }));
+      } else {
+        ({ data: n, error } = await supabase.rpc('registrar_reservacion', { p: { ...datos, ...extra }, p_hasta: repite ? hasta : null, p_frecuencia: repite ? modo : 'semanal' }));
+      }
+      destino = `/reservaciones/calendario?semana=${desdeQ}`;
       if (!error && n > 1) destino += `&series=${n}`;
     }
     setOcupado(false);
@@ -156,7 +176,7 @@ export default function FormReservacion() {
   }
 
   if (!cargado) return <><h1>Reservaciones</h1><Aviso mensaje={mensaje} /><p className="tenue">Cargando…</p></>;
-  const sesiones = repite && hasta >= dia ? contarSesiones(dia, hasta, modo) : 1;
+  const sesiones = distintos ? filas.length : repite && hasta >= dia ? contarSesiones(dia, hasta, modo) : 1;
 
   return (
     <>
@@ -270,10 +290,36 @@ export default function FormReservacion() {
               <legend>Duración</legend>
               {Object.entries(MODOS).filter(([k]) => !id || ['uno', 'continuo'].includes(k)).map(([k, t]) => (
                 <label key={k} className="casilla"><input type="radio" checked={modo === k}
-                  onChange={() => { setModo(k); if (k === 'continuo' && !(diaFin > dia)) setDiaFin(sumarDia(dia)); }} />{t}</label>
+                  onChange={() => {
+                    setModo(k);
+                    if (k === 'continuo' && !(diaFin > dia)) setDiaFin(sumarDia(dia));
+                    if (k === 'distintos' && !filas.length) setFilas([{ dia, ini: horaIni, fin: horaFin }, { dia: sumarDia(dia), ini: horaIni, fin: horaFin }]);
+                  }} />{t}</label>
               ))}
             </fieldset>
-            {continuo ? (
+            {distintos ? (
+              <>
+                <ul className="lista-renglones lista-sesiones">
+                  {filas.map((x, i) => {
+                    const cambiar = (k) => (e) => setFilas(filas.map((y, j) => (j === i ? { ...y, [k]: e.target.value } : y)));
+                    return (
+                      <li key={i}>
+                        <input type="date" aria-label={`Fecha del día ${i + 1}`} value={x.dia} onChange={cambiar('dia')} required />
+                        <input type="time" aria-label="De" value={x.ini} step="900" onChange={cambiar('ini')} required />
+                        <span>a</span>
+                        <input type="time" aria-label="A" value={x.fin} step="900" onChange={cambiar('fin')} required />
+                        <button type="button" className="btn btn-chico" disabled={filas.length === 1}
+                          onClick={() => setFilas(filas.filter((_, j) => j !== i))}>Quitar</button>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <button type="button" className="btn btn-chico" disabled={filas.length >= 60}
+                  onClick={() => { const u = filas[filas.length - 1]; setFilas([...filas, { dia: u?.dia ? sumarDia(u.dia) : dia, ini: u?.ini ?? horaIni, fin: u?.fin ?? horaFin }]); }}>
+                  + Agregar día</button>
+                <p className="tenue nota">Cada día con su propio horario; se guardan juntos como una serie (máximo 60). Si uno se cruza, no se guarda ninguno.</p>
+              </>
+            ) : continuo ? (
               <>
                 <div className="fila-campos">
                   <label>Empieza el<input type="date" value={dia} onChange={(e) => setDia(e.target.value)} required /></label>
@@ -319,7 +365,7 @@ export default function FormReservacion() {
               )
             )}
             {bloqueantes.map(({ r, motivo }) => (
-              <p key={r.id} className="aviso aviso-error nota">Se cruza con «{r.titulo}» ({horario(r)}): {motivo}.</p>
+              <p key={r.id} className="aviso aviso-error nota">Se cruza con «{r.titulo}» ({distintos || continuo ? `${fecha(diaLocal(r.inicio))} ` : ''}{horario(r)}): {motivo}.</p>
             ))}
             <button className="btn btn-primario" disabled={ocupado || (fuera && !esAdmin) || bloqueantes.length > 0}>
               {ocupado ? 'Guardando…' : id ? 'Guardar cambios' : sesiones > 1 ? `Reservar ${sesiones} sesiones` : 'Reservar'}
@@ -327,14 +373,14 @@ export default function FormReservacion() {
           </section>
 
           <section className="tarjeta">
-            <h2>{continuo && diaFin > dia ? `Esos días · ${fecha(dia)} al ${fecha(diaFin)}` : `${repite ? 'El primer día' : 'Ese día'} · ${dia ? fecha(dia) : ''}`}</h2>
+            <h2>{desdeQ !== hastaQ ? `Esos días · ${fecha(desdeQ)} al ${fecha(hastaQ)}` : `${repite ? 'El primer día' : 'Ese día'} · ${dia ? fecha(dia) : ''}`}</h2>
             {delDia.length === 0 ? <p className="tenue">Sin otras reservaciones.</p> : (
               <ul className="lista-simple lista-dia">
                 {delDia.map((r) => {
                   const choque = cruces.find((c) => c.r.id === r.id);
                   return (
                     <li key={r.id}>
-                      <strong>{horario(r)}</strong> <EtiquetaActividad actividad={r.actividad} /> {r.titulo}
+                      <strong>{desdeQ !== hastaQ && mismoDia(r) ? `${fecha(diaLocal(r.inicio))} ` : ''}{horario(r)}</strong> <EtiquetaActividad actividad={r.actividad} /> {r.titulo}
                       {r.ocupa_todo && <> <Etiqueta tono="gris">todo el lab</Etiqueta></>}
                       {choque && (choque.motivo ? <> <Etiqueta tono="mal">se cruza</Etiqueta></> : <> <Etiqueta tono="aviso">coincide</Etiqueta></>)}
                     </li>

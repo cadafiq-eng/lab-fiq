@@ -117,7 +117,7 @@ export const CAPITULOS = [
             'Reservaciones → «Nueva reservación».',
             'Elija el tipo de actividad y escriba el nombre de la práctica, proyecto o servicio. En clases, talleres y cursos capture la asignatura, el programa educativo, el semestre y el número de alumnos (formato de solicitud de prácticas).',
             'Capture al responsable (profesor, asesor o responsable del servicio), quiénes usarán el laboratorio y si son internos o externos; para externos, la institución.',
-            'En «Duración» elija: un solo día; varios días con el mismo horario (de lunes a viernes, o incluido el fin de semana; máximo 60 sesiones); cada semana, para una clase semanal (máximo 26 sesiones); o uso continuo, cuando el trabajo o el equipo sigue de un día a otro sin interrupción. Después indique la fecha, el horario y, si se repite, la fecha final.',
+            'En «Duración» elija: un solo día; varios días con el mismo horario (de lunes a viernes, o incluido el fin de semana; máximo 60 sesiones); varios días con horario distinto (agregue cada día con su fecha y horario con «+ Agregar día»; máximo 60); cada semana, para una clase semanal (máximo 26 sesiones); o uso continuo, cuando el trabajo o el equipo sigue de un día a otro sin interrupción. Después indique la fecha, el horario y, si se repite, la fecha final.',
             'Agregue los equipos que se usarán, los materiales y los residuos peligrosos que se generarán.',
             'Revise el cuadro de ocupación del día (o de los días, en uso continuo) y los avisos de cruce, y pulse «Reservar».',
           ] },
