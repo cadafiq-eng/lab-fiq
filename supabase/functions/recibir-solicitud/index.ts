@@ -5,8 +5,8 @@
 //
 // Seguridad:
 //   * Se despliega SIN verificación de JWT (Postmark no tiene sesión de Supabase).
-//   * Exige la clave del secreto RECEPTOR_CLAVE, enviada por Postmark como
-//     autenticación básica en la URL del webhook: https://lab:CLAVE@…/recibir-solicitud
+//   * Exige la clave del secreto RECEPTOR_CLAVE, en la URL del webhook de
+//     Postmark: …/recibir-solicitud?clave=CLAVE (también acepta autenticación básica).
 //   * Inserta con la llave de servicio, que Supabase inyecta en el servidor;
 //     nunca llega al navegador.
 

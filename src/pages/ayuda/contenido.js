@@ -117,9 +117,9 @@ export const CAPITULOS = [
             'Reservaciones → «Nueva reservación».',
             'Elija el tipo de actividad y escriba el nombre de la práctica, proyecto o servicio. En clases, talleres y cursos capture la asignatura, el programa educativo, el semestre y el número de alumnos (formato de solicitud de prácticas).',
             'Capture al responsable (profesor, asesor o responsable del servicio), quiénes usarán el laboratorio y si son internos o externos; para externos, la institución.',
-            'Indique la fecha y el horario. Para una clase semanal marque «Repetir cada semana» y la fecha final (máximo 26 sesiones).',
+            'En «Duración» elija: un solo día; varios días con el mismo horario (de lunes a viernes, o incluido el fin de semana; máximo 60 sesiones); cada semana, para una clase semanal (máximo 26 sesiones); o uso continuo, cuando el trabajo o el equipo sigue de un día a otro sin interrupción. Después indique la fecha, el horario y, si se repite, la fecha final.',
             'Agregue los equipos que se usarán, los materiales y los residuos peligrosos que se generarán.',
-            'Revise el cuadro «Ese día» y los avisos de cruce, y pulse «Reservar».',
+            'Revise el cuadro de ocupación del día (o de los días, en uso continuo) y los avisos de cruce, y pulse «Reservar».',
           ] },
           { tabla: {
             encabezados: ['Situación', 'Regla'],
@@ -128,7 +128,8 @@ export const CAPITULOS = [
               ['Investigación, proyecto, vinculación, taller u otra', 'Puede coincidir con otras actividades, salvo que se marque «Ocupa todo el laboratorio» (los talleres y cursos lo traen marcado).'],
               ['Mismo equipo', 'Un equipo no puede estar en dos reservaciones a la misma hora.'],
               ['Fuera del horario o en fin de semana', 'Solo la registra el Administrador, con un contacto de emergencia. Conviene que trabajen al menos dos personas y avisar al Secretario Administrativo (formato de acceso en fin de semana).'],
-              ['Serie semanal con un cruce', 'No se guarda ninguna sesión; el mensaje indica la fecha que se cruza.'],
+              ['Uso continuo (empieza un día y termina otro)', 'Pasa fuera del horario: solo la registra el Administrador, con contacto de emergencia. Máximo 14 días; no se repite. En el calendario aparece rayada en cada día que abarca.'],
+              ['Serie (varios días o semanal) con un cruce', 'No se guarda ninguna sesión; el mensaje indica la fecha que se cruza.'],
             ],
           } },
           { nota: 'La reservación aparta el horario; para entrar, cada persona necesita su autorización de acceso vigente, y el uso de cada equipo se registra en la terminal, que revisa capacitación y mantenimiento.' },
@@ -151,7 +152,7 @@ export const CAPITULOS = [
       {
         titulo: 'Editar o cancelar',
         bloques: [
-          { p: 'En el detalle de la reservación, «Editar» cambia los datos de esa sesión y «Cancelar reservación» la deja como cancelada con su motivo y libera el horario. En una serie semanal puede cancelar también las sesiones siguientes. Las reservaciones canceladas no se reactivan: se registra una nueva.' },
+          { p: 'En el detalle de la reservación, «Editar» cambia los datos de esa sesión y «Cancelar reservación» la deja como cancelada con su motivo y libera el horario. En una serie (de varios días o semanal) puede cancelar también las sesiones siguientes. Las reservaciones canceladas no se reactivan: se registra una nueva.' },
         ],
       },
     ],

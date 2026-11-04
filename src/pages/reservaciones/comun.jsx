@@ -55,7 +55,10 @@ export const SELECT_RESERVACION = `id, serie_id, inicio, fin, actividad, ocupa_t
 
 const dos = (n) => String(n).padStart(2, '0');
 export const hhmm = (ts) => { const d = new Date(ts); return `${dos(d.getHours())}:${dos(d.getMinutes())}`; };
-export const horario = (r) => `${hhmm(r.inicio)}–${hhmm(r.fin)}`;
+export const mismoDia = (r) => new Date(r.inicio).toDateString() === new Date(r.fin).toDateString();
+const ddmm = (ts) => { const d = new Date(ts); return `${d.getDate()} ${MESES[d.getMonth()]}`; };
+// «09:00–11:00», o con fechas si la reservación es de uso continuo
+export const horario = (r) => (mismoDia(r) ? `${hhmm(r.inicio)}–${hhmm(r.fin)}` : `${ddmm(r.inicio)} ${hhmm(r.inicio)} → ${ddmm(r.fin)} ${hhmm(r.fin)}`);
 
 // Lunes de la semana de una fecha (hora local)
 export function lunesDe(fecha) {
