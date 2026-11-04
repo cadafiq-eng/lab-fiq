@@ -3,37 +3,163 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase, mensajeError } from '../../supabase';
 import { useSesion } from '../../auth';
 import { Aviso, Etiqueta } from '../../componentes';
-import { fecha } from '../../util';
+import { fecha, fechaHora } from '../../util';
 import { RESIDUOS } from '../reservaciones/comun';
 import { leerSolicitud, piezasEquipo, sugerirEquipos } from './lector';
 
-// Importa una solicitud del sistema de Laboratorios FIQ (aprobación de Power Automate):
-// el personal pega el texto y la app llena la autorización de acceso o la reservación.
+// Solicitudes del sistema de Laboratorios FIQ (aprobaciones de Power Automate).
+// «Pendientes»: las que el flujo del laboratorio copia automáticamente a la app.
+// «Pegar texto»: importación manual. En ambos casos la app llena la autorización
+// de acceso o la reservación; al registrarla con el folio, sale de pendientes.
 export default function ImportarSolicitud() {
+  const [vista, setVista] = useState('pendientes');
   const [texto, setTexto] = useState('');
+  const [abierta, setAbierta] = useState(null);   // solicitud entrante en revisión
   const datos = useMemo(() => leerSolicitud(texto), [texto]);
+
+  function abrir(sol) { setAbierta(sol); setTexto(sol.texto); setVista('revisar'); window.scrollTo(0, 0); }
 
   return (
     <>
-      <h1>Importar solicitud FIQ</h1>
-      <p className="tenue">Las solicitudes de acceso y de práctica llegan como aprobaciones de Power Automate (Laboratorios FIQ).
-        Apruébela o recházela ahí como siempre; para registrarla aquí sin volver a capturar, abra el correo o la aprobación,
-        seleccione todo el texto (Ctrl + A), cópielo (Ctrl + C) y péguelo abajo.</p>
-      <section className="tarjeta formulario una-columna">
-        <label>Texto de la aprobación
-          <textarea rows={texto ? 5 : 10} value={texto} onChange={(e) => setTexto(e.target.value)}
-            placeholder="[Aprobación] Solicitud de Practica … Solicitud: 3949 … Asignatura: … Fecha: … Horario: …" />
-        </label>
-        {texto.trim() && !datos && (
-          <p className="aviso aviso-error nota">No se reconoce como solicitud de acceso ni de práctica. Copie el correo completo,
-            desde «[Aprobación]» hasta «Atentamente».</p>
-        )}
-        {datos && <p className="nota"><Etiqueta tono="bien">{datos.tipo === 'practica' ? 'Solicitud de práctica' : 'Solicitud de acceso'}</Etiqueta>
-          {datos.folio && <> · Folio FIQ <strong>{datos.folio}</strong></>}</p>}
-      </section>
-      {datos?.tipo === 'practica' && <Practica d={datos} />}
-      {datos?.tipo === 'acceso' && <Acceso d={datos} />}
+      <h1>Solicitudes FIQ</h1>
+      <nav className="pestanas">
+        {[['pendientes', 'Pendientes'], ['pegar', 'Pegar texto'], ['historial', 'Atendidas']].map(([k, t]) => (
+          <a key={k} href="#" className={vista === k || (k === 'pendientes' && vista === 'revisar') ? 'active' : ''}
+            onClick={(e) => { e.preventDefault(); setVista(k); if (k !== 'revisar') { setAbierta(null); if (k === 'pegar') setTexto(''); } }}>{t}</a>
+        ))}
+      </nav>
+
+      {vista === 'pendientes' && <Bandeja estado="pendiente" alAbrir={abrir} />}
+      {vista === 'historial' && <Bandeja estado="atendidas" alAbrir={abrir} />}
+
+      {vista === 'revisar' && abierta && (
+        <Revisar sol={abierta} alTerminar={() => { setAbierta(null); setVista('pendientes'); }} />
+      )}
+
+      {(vista === 'pegar' || vista === 'revisar') && (
+        <>
+          {vista === 'pegar' && (
+            <section className="tarjeta formulario una-columna">
+              <p className="tenue nota">Si una solicitud no llegó sola a «Pendientes», abra el correo o la aprobación, seleccione todo el texto
+                (Ctrl + A), cópielo (Ctrl + C) y péguelo aquí.</p>
+              <label>Texto de la aprobación
+                <textarea rows={texto ? 5 : 10} value={texto} onChange={(e) => setTexto(e.target.value)}
+                  placeholder="[Aprobación] Solicitud de Practica … Solicitud: 3949 … Asignatura: … Fecha: … Horario: …" />
+              </label>
+              {texto.trim() && !datos && (
+                <p className="aviso aviso-error nota">No se reconoce como solicitud de acceso ni de práctica. Copie el correo completo,
+                  desde «[Aprobación]» hasta «Atentamente».</p>
+              )}
+            </section>
+          )}
+          {datos && <p className="nota una-columna"><Etiqueta tono="bien">{datos.tipo === 'practica' ? 'Solicitud de práctica' : 'Solicitud de acceso'}</Etiqueta>
+            {datos.folio && <> · Folio FIQ <strong>{datos.folio}</strong></>}</p>}
+          {vista === 'revisar' && !datos && (
+            <p className="aviso aviso-error">No se reconocen los datos de esta solicitud. Revise el texto original abajo y, si no es una solicitud, descártela.</p>
+          )}
+          {datos?.tipo === 'practica' && <Practica d={datos} />}
+          {datos?.tipo === 'acceso' && <Acceso d={datos} />}
+          {vista === 'revisar' && abierta && (
+            <details className="tarjeta una-columna"><summary>Texto original recibido</summary>
+              <pre className="historial-obs texto-original">{abierta.texto}</pre></details>
+          )}
+        </>
+      )}
     </>
+  );
+}
+
+const TIPOS_SOL = { practica: ['Práctica', 'act-clase'], acceso: ['Acceso', 'act-investigacion'], desconocido: ['Sin reconocer', 'act-otro'] };
+
+function Bandeja({ estado, alAbrir }) {
+  const [lista, setLista] = useState(null);
+  const [mensaje, setMensaje] = useState(null);
+  useEffect(() => {
+    setLista(null);
+    let q = supabase.from('solicitudes_entrantes').select('*').order('recibida_en', { ascending: false }).limit(200);
+    q = estado === 'pendiente' ? q.eq('estado', 'pendiente') : q.neq('estado', 'pendiente');
+    q.then(({ data, error }) => error ? setMensaje({ tipo: 'error', texto: mensajeError(error) }) : setLista(data));
+  }, [estado]);
+  const leida = (s) => leerSolicitud(s.texto);
+
+  return (
+    <section className="tarjeta una-columna">
+      <Aviso mensaje={mensaje} />
+      {estado === 'pendiente' && <AvisosNavegador />}
+      {!lista ? <p className="tenue">Cargando…</p> : lista.length === 0 ? (
+        <p className="tenue">{estado === 'pendiente' ? 'No hay solicitudes pendientes. Las nuevas aparecen aquí en cuanto llegan al correo del laboratorio.' : 'Aún no hay solicitudes atendidas.'}</p>
+      ) : (
+        <div className="tabla-desplazable"><table>
+          <thead><tr><th>Recibida</th><th>Tipo</th><th>Folio</th><th>Solicitud</th><th>{estado === 'pendiente' ? '' : 'Estado'}</th></tr></thead>
+          <tbody>{lista.map((s) => {
+            const d = leida(s);
+            const [t, color] = TIPOS_SOL[s.tipo] ?? TIPOS_SOL.desconocido;
+            return (
+              <tr key={s.id} className="fila-enlace" onClick={() => estado === 'pendiente' && alAbrir(s)}>
+                <td className="sin-salto">{fechaHora(s.recibida_en)}</td>
+                <td><span className={'etiqueta ' + color}>{t}</span></td>
+                <td>{s.folio ?? '—'}</td>
+                <td>{d?.tipo === 'practica' ? <><strong>{d.titulo}</strong><br /><span className="tenue">{d.responsable} · {d.fecha ? fecha(d.fecha) : ''} {d.hora_inicio}–{d.hora_fin}</span></>
+                  : d?.tipo === 'acceso' ? <><strong>{d.nombre}</strong><br /><span className="tenue">{d.titulo || d.actividad} · {fecha(d.inicio)} al {fecha(d.fin)}</span></>
+                  : <span className="tenue">{s.asunto}</span>}</td>
+                <td>{estado === 'pendiente' ? <button className="btn btn-chico">Revisar</button>
+                  : s.estado === 'registrada' ? <Etiqueta tono="bien">Registrada</Etiqueta>
+                  : <><Etiqueta tono="gris">Descartada</Etiqueta><br /><span className="tenue chico">{s.motivo_descarte}</span></>}</td>
+              </tr>
+            );
+          })}</tbody>
+        </table></div>
+      )}
+    </section>
+  );
+}
+
+// Aviso del navegador cuando llega una solicitud nueva (con la app abierta)
+function AvisosNavegador() {
+  const soportado = typeof window !== 'undefined' && 'Notification' in window;
+  const [permiso, setPermiso] = useState(soportado ? Notification.permission : 'denied');
+  if (!soportado || permiso === 'granted') return null;
+  return (
+    <p className="tenue nota">
+      {permiso === 'denied' ? 'Los avisos del navegador están bloqueados para este sitio; actívelos en la configuración del navegador si los quiere.'
+        : <>¿Quiere un aviso en la computadora cuando llegue una solicitud nueva (con la app abierta)?{' '}
+          <button className="btn-enlace" onClick={() => Notification.requestPermission().then(setPermiso)}>Activar avisos</button></>}
+    </p>
+  );
+}
+
+function Revisar({ sol, alTerminar }) {
+  const [descartar, setDescartar] = useState(false);
+  const [motivo, setMotivo] = useState('');
+  const [error, setError] = useState('');
+  async function confirmar(e) {
+    e.preventDefault();
+    const { error: err } = await supabase.from('solicitudes_entrantes').update({ estado: 'descartada', motivo_descarte: motivo }).eq('id', sol.id);
+    if (err) setError(mensajeError(err)); else alTerminar();
+  }
+  return (
+    <section className="tarjeta una-columna">
+      <div className="encabezado">
+        <div>
+          <h2>Solicitud recibida el {fechaHora(sol.recibida_en)}</h2>
+          <p className="tenue">{sol.asunto}</p>
+        </div>
+        <div className="fila-botones">
+          <button className="btn" onClick={alTerminar}>Volver a pendientes</button>
+          <button className="btn" onClick={() => setDescartar(!descartar)}>Descartar</button>
+        </div>
+      </div>
+      <p className="tenue nota">Al registrar la reservación o la autorización con su folio, la solicitud sale sola de pendientes.
+        Si la rechazó en Power Automate o no corresponde, descártela con el motivo.</p>
+      {descartar && (
+        <form className="formulario fila-agregar" onSubmit={confirmar}>
+          <label className="crece">Motivo<input value={motivo} onChange={(e) => setMotivo(e.target.value)} required
+            placeholder="Ej. Rechazada en Power Automate, duplicada, otro laboratorio" /></label>
+          <button className="btn btn-primario">Descartar solicitud</button>
+          {error && <p className="aviso aviso-error">{error}</p>}
+        </form>
+      )}
+    </section>
   );
 }
 

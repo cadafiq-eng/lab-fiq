@@ -7,7 +7,8 @@ Laboratorios de la FIQ y su Manual de Seguridad. Responsable: Dr. Luis Antonio C
 ## Pila
 
 - React 18 + Vite 5 + react-router-dom 6 con `HashRouter` (GitHub Pages no resuelve rutas internas).
-- Supabase: PostgreSQL + Auth + RLS + una Edge Function (`supabase/functions/gestionar-personal`).
+- Supabase: PostgreSQL + Auth + RLS + Edge Functions (`gestionar-personal`; `recibir-solicitud`, sin JWT,
+  protegida con el secreto `RECEPTOR_CLAVE`).
 - Publicación: GitHub Actions → GitHub Pages en cada push a `main`
   (variables de repositorio `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`).
 - Sin TypeScript, sin librería de componentes: estilos propios en `src/styles.css`.
@@ -24,7 +25,7 @@ Laboratorios de la FIQ y su Manual de Seguridad. Responsable: Dr. Luis Antonio C
 - **Nada se borra**: no hay políticas DELETE; se usa `activo = false`. Toda escritura queda en
   `bitacora_auditoria`.
 - **Secretos**: solo la llave anon/publishable va al navegador. La `service_role` existe únicamente
-  dentro de la Edge Function. Nunca pedir ni escribir contraseñas o llaves en el repositorio.
+  dentro de las Edge Functions. Nunca pedir ni escribir contraseñas o llaves en el repositorio.
 - Antes de entregar: `npm run build` sin errores y, si cambia SQL, probarlo en un PostgreSQL local.
 
 ## Roles
@@ -59,6 +60,8 @@ Laboratorios de la FIQ y su Manual de Seguridad. Responsable: Dr. Luis Antonio C
 - Solicitudes FIQ (`0008`): llegan como aprobaciones de Power Automate de laboratorios.fiq (flujo ajeno,
   sin conector). Se importan pegando el texto (`src/pages/solicitudes/lector.js`); folio FIQ único por
   autorización y por sesión programada. Sin matrícula → persona externa (`registrar_acceso_solicitud`).
+  Bandeja automática (`0009`): flujo estándar del laboratorio → Postmark Inbound → `recibir-solicitud`
+  → `solicitudes_entrantes`; registrar con el folio la marca como registrada; descartar exige motivo.
 - Carga inicial: plantillas Excel en `public/plantillas/` (generadas con openpyxl; sin celdas de texto
   vacío, que `read-excel-file` no acepta). Importación atómica con `importar_articulos` e
   `importar_equipos` (solo Administrador).
