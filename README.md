@@ -26,7 +26,8 @@ src/                   Aplicación web
    `0005_prestamos_inventario.sql` (fases 4 y 5), `0006_carga_inicial.sql` (fase 6) y
    `0007_reservaciones.sql` (reservaciones), `0008_solicitudes_fiq.sql` (importar solicitudes FIQ) y
    `0009_bandeja_solicitudes.sql` (bandeja automática) y `0010_reservaciones_varios_dias.sql`
-   y `0011_reservacion_dias_distintos.sql` (reservaciones de varios días).
+   y `0011_reservacion_dias_distintos.sql` (reservaciones de varios días),
+   `0012_acceso_varias_personas.sql` (solicitudes de acceso con varias personas).
    Cada archivo se ejecuta una sola vez y en orden.
 3. Authentication → Users → **Add user**: correo y contraseña del Administrador,
    con «Auto Confirm User».

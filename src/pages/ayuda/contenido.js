@@ -142,7 +142,7 @@ export const CAPITULOS = [
           { pasos: [
             'Abra Solicitudes FIQ → Pendientes y pulse «Revisar» en la solicitud. La app muestra lo que leyó.',
             'Práctica: elija qué equipo del catálogo se reserva para cada equipo solicitado y pulse «Continuar a la reservación». El formulario se abre lleno (asignatura, horario, alumnos por programa educativo, materiales, reactivos y residuos): revise y pulse «Reservar».',
-            'Acceso (Administrador): revise nombre, matrícula, correo, proyecto y periodo, y pulse «Registrar autorización». Para estudiantes se propone el correo institucional a partir de la matrícula; para académicos o externos capture su correo, que la solicitud no trae.',
+            'Acceso (Administrador): revise nombre, matrícula, correo, proyecto y periodo, y pulse «Registrar autorización». Para estudiantes se propone el correo institucional a partir de la matrícula; para académicos o externos capture su correo si la solicitud no lo trae. Si la solicitud trae varias personas («A y B»), la app las separa: revise los datos de cada una (puede agregar o quitar personas) y se registran todas juntas con el mismo folio. El correo y teléfono de contacto de la solicitud se proponen para todas.',
             'Al registrarla con su folio, la solicitud sale sola de Pendientes. Si la rechazó en Power Automate, es duplicada o de otro laboratorio, pulse «Descartar» e indique el motivo.',
           ] },
           { p: 'Si una solicitud no llegó sola, use la pestaña «Pegar texto»: copie todo el texto del correo de aprobación (Ctrl + A, Ctrl + C) y péguelo.' },
