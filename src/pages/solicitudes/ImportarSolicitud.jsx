@@ -100,7 +100,7 @@ function Bandeja({ estado, alAbrir }) {
                 <td><span className={'etiqueta ' + color}>{t}</span></td>
                 <td>{s.folio ?? '—'}</td>
                 <td>{d?.tipo === 'practica' ? <><strong>{d.titulo}</strong><br /><span className="tenue">{d.responsable} · {d.fecha ? fecha(d.fecha) : ''} {d.hora_inicio}–{d.hora_fin}</span></>
-                  : d?.tipo === 'acceso' ? <><strong>{d.nombre}</strong><br /><span className="tenue">{d.titulo || d.actividad} · {fecha(d.inicio)} al {fecha(d.fin)}</span></>
+                  : d?.tipo === 'acceso' ? <><strong>{d.personas?.map((x) => x.nombre).join(' y ') || d.nombre}</strong><br /><span className="tenue">{d.titulo || d.actividad} · {fecha(d.inicio)} al {fecha(d.fin)}</span></>
                   : <span className="tenue">{s.asunto}</span>}</td>
                 <td>{estado === 'pendiente' ? <button className="btn btn-chico">Revisar</button>
                   : s.estado === 'registrada' ? <Etiqueta tono="bien">Registrada</Etiqueta>
@@ -255,42 +255,59 @@ function Acceso({ d }) {
 
   useEffect(() => {
     setMensaje(null);
-    setF({ nombre: d.nombre, matricula: d.matricula, correo: d.correo, proyecto: d.titulo || d.actividad,
+    const personas = d.personas?.length ? d.personas : [{ nombre: d.nombre, matricula: d.matricula, correo: d.correo, telefono: '' }];
+    setF({ personas: personas.map((x) => ({ ...x })), proyecto: d.titulo || d.actividad,
       inicio: d.inicio, fin: d.fin, institucion: d.institucion, contacto: d.contacto });
     if (d.folio) supabase.from('autorizaciones_acceso').select('id').eq('folio_solicitud', d.folio).limit(1)
       .then(({ data }) => setPrevia(data?.length ? data[0] : null));
   }, [d]);
   if (!f) return null;
   const campo = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const persona = (i, k) => (e) => setF({ ...f, personas: f.personas.map((x, j) => (j === i ? { ...x, [k]: e.target.value } : x)) });
   const otroLab = d.laboratorio && !/tecnolog[ií]a de alimentos/i.test(d.laboratorio);
+  const hayExternos = f.personas.some((x) => !x.matricula);
+  const varias = f.personas.length > 1;
 
   async function guardar(e) {
     e.preventDefault();
     setOcupado(true); setMensaje(null);
-    const { error } = await supabase.rpc('registrar_acceso_solicitud', {
-      p_folio: d.folio, p_nombre: f.nombre, p_matricula: f.matricula, p_correo: f.correo, p_proyecto: f.proyecto,
-      p_inicio: f.inicio, p_fin: f.fin, p_institucion: f.institucion, p_contacto: f.contacto,
+    const { error } = await supabase.rpc('registrar_acceso_grupo', {
+      p_folio: d.folio, p_personas: f.personas.map((x) => ({ nombre: x.nombre, matricula: x.matricula, correo: x.correo, telefono: x.telefono })),
+      p_proyecto: f.proyecto, p_inicio: f.inicio, p_fin: f.fin, p_institucion: f.institucion, p_contacto: f.contacto,
     });
     setOcupado(false);
     if (error) return setMensaje({ tipo: 'error', texto: mensajeError(error) });
-    setMensaje({ tipo: 'ok', texto: `Autorización registrada para ${f.nombre}, del ${fecha(f.inicio)} al ${fecha(f.fin)}. Ya puede identificarse en la terminal.` });
+    const nombres = f.personas.map((x) => x.nombre).join(' y ');
+    setMensaje({ tipo: 'ok', texto: `Autorización registrada para ${nombres}, del ${fecha(f.inicio)} al ${fecha(f.fin)}. Ya ${varias ? 'pueden identificarse' : 'puede identificarse'} en la terminal.` });
     setPrevia({ id: 'nueva' });
   }
 
   return (
     <div className="dos-columnas dos-columnas-amplia">
       <form className="tarjeta formulario" onSubmit={guardar}>
-        <h2>Autorización de acceso</h2>
+        <h2>Autorización de acceso{varias ? ` · ${f.personas.length} personas` : ''}</h2>
         <Aviso mensaje={mensaje} />
         {otroLab && <p className="aviso aviso-alerta nota">La solicitud es para el laboratorio de {d.laboratorio}, no para Tecnología de Alimentos.</p>}
         {previa && !mensaje && <p className="aviso aviso-error nota">La solicitud FIQ {d.folio} ya está registrada en Autorizaciones.</p>}
-        <label>Nombre<input value={f.nombre} onChange={campo('nombre')} required /></label>
-        <div className="fila-campos">
-          <label>Matrícula (estudiantes)<input value={f.matricula} onChange={campo('matricula')} placeholder="Vacío para académicos o externos" /></label>
-          <label>Correo<input type="email" value={f.correo} onChange={campo('correo')} required={!f.matricula} /></label>
-        </div>
-        {f.matricula && <p className="tenue nota">El correo se propone con el formato institucional de estudiantes; corríjalo si es otro.</p>}
-        {!f.matricula && <label>Institución o dependencia<input value={f.institucion} onChange={campo('institucion')} /></label>}
+        {f.personas.map((x, i) => (
+          <fieldset key={i} className="persona-solicitud">
+            <legend>{varias ? `Persona ${i + 1}` : 'Persona'}</legend>
+            <label>Nombre<input value={x.nombre} onChange={persona(i, 'nombre')} required /></label>
+            <div className="fila-campos">
+              <label>Matrícula (estudiantes UADY)<input value={x.matricula} onChange={persona(i, 'matricula')} placeholder="Vacío para externos" /></label>
+              <label>Correo<input type="email" value={x.correo} onChange={persona(i, 'correo')} required={Boolean(x.matricula)} /></label>
+            </div>
+            {!x.matricula && <label>Teléfono<input value={x.telefono ?? ''} onChange={persona(i, 'telefono')} /></label>}
+            {varias && (
+              <button type="button" className="btn btn-chico" onClick={() => setF({ ...f, personas: f.personas.filter((_, j) => j !== i) })}>Quitar a esta persona</button>
+            )}
+          </fieldset>
+        ))}
+        <button type="button" className="btn btn-chico" onClick={() => setF({ ...f, personas: [...f.personas, { nombre: '', matricula: '', correo: f.personas[0]?.matricula ? '' : (f.personas[0]?.correo ?? ''), telefono: '' }] })}>
+          + Agregar persona</button>
+        {varias && hayExternos && <p className="tenue nota">La solicitud trae un solo correo y teléfono: se usan como contacto de todas. Corríjalos si conoce los de cada persona.</p>}
+        {f.personas.some((x) => x.matricula) && <p className="tenue nota">El correo de estudiantes se propone con el formato institucional; corríjalo si es otro.</p>}
+        {hayExternos && <label>Institución o dependencia<input value={f.institucion} onChange={campo('institucion')} /></label>}
         <label>Proyecto o actividad<input value={f.proyecto} onChange={campo('proyecto')} required /></label>
         <div className="fila-campos">
           <label>Desde<input type="date" value={f.inicio} onChange={campo('inicio')} required /></label>
@@ -306,6 +323,7 @@ function Acceso({ d }) {
         <h2>Detalle de la solicitud</h2>
         <dl className="datos">
           <dt>Laboratorio</dt><dd>{d.laboratorio || '—'}</dd>
+          {d.asesor && <><dt>Asesor</dt><dd>{d.asesor}</dd></>}
           {d.tipo_actividad && <><dt>Tipo</dt><dd>{d.tipo_actividad}</dd></>}
           <dt>Actividad</dt><dd>{d.actividad || '—'}</dd>
           {d.proyecto_sistproy && <><dt>Proyecto</dt><dd>{d.proyecto_sistproy}</dd></>}

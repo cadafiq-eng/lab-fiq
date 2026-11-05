@@ -62,7 +62,8 @@ Laboratorios de la FIQ y su Manual de Seguridad. Responsable: Dr. Luis Antonio C
   La terminal ve la agenda con `terminal_agenda` (sin datos personales).
 - Solicitudes FIQ (`0008`): llegan como aprobaciones de Power Automate de laboratorios.fiq (flujo ajeno,
   sin conector). Se importan pegando el texto (`src/pages/solicitudes/lector.js`); folio FIQ único por
-  autorización y por sesión programada. Sin matrícula → persona externa (`registrar_acceso_solicitud`).
+  autorización y por sesión programada. Sin matrícula → persona externa (`registrar_acceso_solicitud`). Varias personas
+  en una solicitud (`0012`): `registrar_acceso_grupo`, folio único por persona.
   Bandeja automática (`0009`): flujo estándar del laboratorio → Postmark Inbound → `recibir-solicitud`
   → `solicitudes_entrantes`; registrar con el folio la marca como registrada; descartar exige motivo.
 - Carga inicial: plantillas Excel en `public/plantillas/` (generadas con openpyxl; sin celdas de texto

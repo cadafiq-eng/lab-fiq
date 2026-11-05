@@ -16,6 +16,9 @@ const ETIQUETAS = [
   'Otros requerimientos', 'Fecha Inicio', 'Fecha Final', 'Tipo de actividad', 'Actividad a realizar', 'Titulo del trabajo',
   'SISTPROY', 'Proyecto', 'Equipo de Laboratorio', 'Reactivos requeridos', 'Nombre', 'Telefono',
   'Fecha de creacion', 'Creado por', 'Solicitado para', 'Solicitado por',
+  // Formato «[ALUMNO EXTERNO] … - Solicitud de acceso a laboratorio»
+  'Correo electronico', 'Institucion de procedencia', 'Asesor o responsable de su estancia en el laboratorio',
+  'Correo electronico del asesor', 'Observaciones del asesor',
 ];
 // Textos que cierran el último campo
 const CIERRES = ['para realizar la aprobacion', 'al aprobar esta solicitud', 'atentamente', 'detalles y requerimientos de la actividad',
@@ -122,6 +125,42 @@ export function leerSolicitud(texto) {
     };
   }
 
+  // Acceso de personas externas: «Se solicita brinde el acceso al usuario con los siguientes datos: Nombre: A y B …»
+  if (/brinde el acceso|institucion de procedencia|\[alumno externo\]/.test(p) && c.nombre !== undefined) {
+    const correo = (c['correo electronico'] ?? '').match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/)?.[0]?.toLowerCase() ?? '';
+    const telefono = (c.telefono ?? '').replace(/[^\d+ ]/g, '').trim();
+    const asesor = c['asesor o responsable de su estancia en el laboratorio'] ?? '';
+    const asesorCorreo = (c['correo electronico del asesor'] ?? '').match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/)?.[0]?.toLowerCase() ?? '';
+    const lab = texto.match(/acceso a laboratorio de\s+([^.\n]+)/i);
+    const personas = separarNombres(c.nombre).map((nombre, i) => ({
+      nombre, matricula: '', correo, telefono: i === 0 ? telefono : '',
+    }));
+    const observ = c['observaciones del asesor'] ?? '';
+    return {
+      tipo: 'acceso',
+      folio,
+      personas,
+      nombre: personas[0]?.nombre ?? '',
+      matricula: '',
+      correo,
+      institucion: c['institucion de procedencia'] ?? '',
+      laboratorio: lab ? lab[1].trim() : '',
+      inicio: fechaISO(c['fecha inicio']),
+      fin: fechaISO(c['fecha final']) || fechaISO(c['fecha inicio']),
+      tipo_actividad: c['tipo de actividad'] ?? '',
+      actividad: c['actividad a realizar'] ?? (/^(na|n\/a|ninguna?|-)?$/i.test(observ) ? '' : observ),
+      titulo: (c['titulo del trabajo'] ?? '').replace(/^["“”«»']+|["“”«»']+$/g, '').trim()
+        || (asesor ? `Estancia en el laboratorio (asesor: ${asesor})` : ''),
+      proyecto_sistproy: [c.sistproy, c.proyecto].filter((x) => x && !/^no$/i.test(x)).join(' · '),
+      asesor: [asesor, asesorCorreo].filter(Boolean).join(' · '),
+      contacto: asesor ? `Asesor: ${[asesor, asesorCorreo].filter(Boolean).join(' · ')}` : '',
+      materiales: c['material de laboratorio requerido'] ?? '',
+      equipos_texto: c['equipo de laboratorio'] ?? '',
+      reactivos: c['reactivos requeridos'] ?? '',
+      residuos: leerResiduos(c['tipo de residuos que se genera']),
+    };
+  }
+
   if (/solicitando acceso/.test(p) || c['fecha inicio'] !== undefined) {
     const estudiante = texto.match(/usuario\s+(.+?)\s+con\s+Matr[ií]cula\s*:\s*([A-Za-z]?\d+)/i);
     const academico = texto.match(/acad[eé]mico\s+(.+?),\s*de la instituci[oó]n\s+(.+?)\s*,\s*esta solicitando/i);
@@ -129,10 +168,14 @@ export function leerSolicitud(texto) {
     const matricula = estudiante ? estudiante[2].toUpperCase() : '';
     const digitos = matricula.replace(/\D/g, '');
     const contactoNombre = c.nombre ?? ''; const contactoTel = c.telefono ?? '';
+    const nombreLeido = (estudiante?.[1] ?? academico?.[1] ?? '').replace(/\s+/g, ' ').trim();
     return {
       tipo: 'acceso',
       folio,
-      nombre: (estudiante?.[1] ?? academico?.[1] ?? '').replace(/\s+/g, ' ').trim(),
+      personas: separarNombres(nombreLeido).map((nombre, i) => ({
+        nombre, matricula: i === 0 ? matricula : '', correo: i === 0 && matricula ? `a${digitos}@alumnos.uady.mx` : '', telefono: '',
+      })),
+      nombre: nombreLeido,
       matricula,
       // Correo institucional de estudiantes UADY: a + matrícula @alumnos.uady.mx (se puede corregir)
       correo: matricula ? `a${digitos}@alumnos.uady.mx` : '',
@@ -152,6 +195,12 @@ export function leerSolicitud(texto) {
     };
   }
   return null;
+}
+
+// «Jacobo Solis Jorge Antonio y Perez Perez Gerladine» → dos personas
+export function separarNombres(texto) {
+  return String(texto ?? '').split(/\s+y\s+|\s+e\s+(?=[A-ZÁÉÍÓÚÑ])|[,;\n]/)
+    .map((s) => s.replace(/\s+/g, ' ').trim()).filter((s) => s.length > 2);
 }
 
 // Separa «Estufón, 1 balanza granataria y cuarto frío» en piezas sin cantidades
