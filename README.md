@@ -37,6 +37,9 @@ src/                   Aplicación web
    where email = 'correo-del-admin@correo.uady.mx';
    ```
 5. Authentication → Sign In / Providers: desactivar **Allow new users to sign up**.
+   En Authentication → URL Configuration: **Site URL** = `https://cadafiq-eng.github.io/lab-fiq/`
+   y en **Redirect URLs** agregar `https://cadafiq-eng.github.io/lab-fiq/**`. Así los enlaces de
+   «Restablecer contraseña» abren la app (por omisión apuntan a `http://localhost:3000`).
 
 ### 2. Función de cuentas del personal
 Supabase → Edge Functions → **Deploy a new function** → **Via Editor**:

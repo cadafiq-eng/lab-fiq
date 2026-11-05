@@ -49,7 +49,7 @@ export const CAPITULOS = [
             'Para cambiar su contraseña: en el menú lateral, «Mi cuenta» → escriba la actual y la nueva (mínimo 8 caracteres).',
             'Al terminar su turno, use «Cerrar sesión» en el menú lateral, sobre todo en computadoras compartidas.',
           ] },
-          { nota: 'Si olvidó su contraseña, pida al Administrador que le asigne una nueva desde «Personal».' },
+          { nota: 'Si olvidó su contraseña, en la pantalla de inicio de sesión pulse «¿Olvidó su contraseña?», escriba su correo y abra el enlace que le llega: la app le pedirá la contraseña nueva. El enlace vence en una hora. También puede pedir al Administrador que le asigne una desde «Personal».' },
         ],
       },
     ],
