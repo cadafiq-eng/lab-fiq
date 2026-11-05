@@ -397,3 +397,9 @@ details.tarjeta summary { cursor: pointer; font-weight: 600; color: var(--azul);
 .persona-solicitud { border: 1px solid var(--borde); border-radius: 6px; padding: 8px 12px 12px; margin: 0 0 10px; display: grid; gap: 8px; }
 .persona-solicitud legend { font-weight: 600; padding: 0 4px; }
 .persona-solicitud > .btn { justify-self: start; }
+
+/* Botón «Aprobar en Power Automate» y último paso tras registrar una solicitud */
+.boton-aprobar { display: inline-flex; flex-direction: column; gap: 2px; }
+.boton-aprobar .btn { text-decoration: none; }
+.siguiente-paso { justify-items: start; border: 1px solid var(--oro); background: var(--oro-claro); border-radius: 8px; padding: 12px 14px; margin: 12px 0; display: grid; gap: 8px; }
+.siguiente-paso p { margin: 0; }

@@ -6,6 +6,7 @@ import { Aviso, Etiqueta } from '../../componentes';
 import { fecha, fechaHora } from '../../util';
 import { RESIDUOS } from '../reservaciones/comun';
 import { leerSolicitud, piezasEquipo, sugerirEquipos } from './lector';
+import { BotonAprobar, enlaceEnTexto } from './aprobacion';
 
 // Solicitudes del sistema de Laboratorios FIQ (aprobaciones de Power Automate).
 // «Pendientes»: las que el flujo del laboratorio copia automáticamente a la app.
@@ -16,6 +17,8 @@ export default function ImportarSolicitud() {
   const [texto, setTexto] = useState('');
   const [abierta, setAbierta] = useState(null);   // solicitud entrante en revisión
   const datos = useMemo(() => leerSolicitud(texto), [texto]);
+  // Enlace a la aprobación en Power Automate (guardado al recibirla, o dentro del texto pegado)
+  const enlace = (vista === 'revisar' ? abierta?.enlace_aprobacion : null) || enlaceEnTexto(texto);
 
   function abrir(sol) { setAbierta(sol); setTexto(sol.texto); setVista('revisar'); window.scrollTo(0, 0); }
 
@@ -57,8 +60,8 @@ export default function ImportarSolicitud() {
           {vista === 'revisar' && !datos && (
             <p className="aviso aviso-error">No se reconocen los datos de esta solicitud. Revise el texto original abajo y, si no es una solicitud, descártela.</p>
           )}
-          {datos?.tipo === 'practica' && <Practica d={datos} />}
-          {datos?.tipo === 'acceso' && <Acceso d={datos} />}
+          {datos?.tipo === 'practica' && <Practica d={datos} enlace={enlace} />}
+          {datos?.tipo === 'acceso' && <Acceso d={datos} enlace={enlace} />}
           {vista === 'revisar' && abierta && (
             <details className="tarjeta una-columna"><summary>Texto original recibido</summary>
               <pre className="historial-obs texto-original">{abierta.texto}</pre></details>
@@ -145,6 +148,7 @@ function Revisar({ sol, alTerminar }) {
           <p className="tenue">{sol.asunto}</p>
         </div>
         <div className="fila-botones">
+          <BotonAprobar enlace={sol.enlace_aprobacion} texto={sol.enlace_aprobacion ? 'Ver en Power Automate ↗' : undefined} />
           <button className="btn" onClick={alTerminar}>Volver a pendientes</button>
           <button className="btn" onClick={() => setDescartar(!descartar)}>Descartar</button>
         </div>
@@ -166,7 +170,7 @@ function Revisar({ sol, alTerminar }) {
 // ---------------------------------------------------------------------
 // Práctica → reservación (se abre el formulario de reservación ya lleno)
 // ---------------------------------------------------------------------
-function Practica({ d }) {
+function Practica({ d, enlace }) {
   const navegar = useNavigate();
   const [equipos, setEquipos] = useState([]);
   const [elegidos, setElegidos] = useState({});
@@ -202,6 +206,7 @@ function Practica({ d }) {
           observaciones: [sinReservar.length ? `Equipo solicitado sin reservar: ${sinReservar.join(', ')}` : '', d.observaciones].filter(Boolean).join('\n'),
           folio_solicitud: d.folio, alumnos_pe: d.alumnos_pe,
         },
+        enlace_aprobacion: enlace,
         dia: d.fecha, horaIni: d.hora_inicio, horaFin: d.hora_fin,
         equipos: [...new Set(Object.values(elegidos).filter(Boolean))], residuos: d.residuos,
       },
@@ -237,7 +242,7 @@ function Practica({ d }) {
           </label>
         ))}
         <button className="btn btn-primario" onClick={continuar} disabled={Boolean(previa)}>Continuar a la reservación</button>
-        <p className="tenue nota">Se abrirá el formulario de reservación con todo lleno: revise cruces y guarde.</p>
+        <p className="tenue nota">Se abrirá el formulario de reservación con todo lleno: revise cruces y guarde. Después podrá aprobar la solicitud en Power Automate.</p>
       </section>
     </div>
   );
@@ -246,7 +251,7 @@ function Practica({ d }) {
 // ---------------------------------------------------------------------
 // Acceso → autorización de acceso (solo el Administrador)
 // ---------------------------------------------------------------------
-function Acceso({ d }) {
+function Acceso({ d, enlace }) {
   const { esAdmin } = useSesion();
   const [f, setF] = useState(null);
   const [mensaje, setMensaje] = useState(null);
@@ -317,7 +322,15 @@ function Acceso({ d }) {
         {esAdmin ? (
           <button className="btn btn-primario" disabled={ocupado || Boolean(previa)}>{ocupado ? 'Registrando…' : 'Registrar autorización'}</button>
         ) : <p className="aviso aviso-alerta nota">Las autorizaciones de acceso las registra el Administrador.</p>}
-        {mensaje?.tipo === 'ok' && <Link to="/acceso/autorizaciones">Ver autorizaciones</Link>}
+        {mensaje?.tipo === 'ok' && (
+          <div className="siguiente-paso">
+            <p><strong>Último paso:</strong> apruebe la solicitud en Power Automate.</p>
+            <div className="fila-botones">
+              <BotonAprobar enlace={enlace} principal />
+              <Link className="btn" to="/acceso/autorizaciones">Ver autorizaciones</Link>
+            </div>
+          </div>
+        )}
       </form>
       <section className="tarjeta">
         <h2>Detalle de la solicitud</h2>
