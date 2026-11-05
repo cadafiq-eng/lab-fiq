@@ -12,6 +12,7 @@ import ImportarSolicitud from './pages/solicitudes/ImportarSolicitud';
 import { usePendientesFIQ } from './pendientes';
 import Acceso from './pages/acceso/Acceso';
 import MiCuenta from './pages/MiCuenta';
+import NuevaContrasena from './pages/NuevaContrasena';
 import Equipos from './pages/equipos/Equipos';
 import Prestamos from './pages/prestamos/Prestamos';
 import Inventario from './pages/inventario/Inventario';
@@ -19,11 +20,12 @@ import Reportes from './pages/reportes/Reportes';
 import Ayuda from './pages/ayuda/Ayuda';
 
 export default function App() {
-  const { sesion, perfil, cargando, esPersonal, esTerminal, esAdmin, salir } = useSesion();
+  const { sesion, perfil, cargando, esPersonal, esTerminal, esAdmin, salir, definirContrasena } = useSesion();
   const pendientesFIQ = usePendientesFIQ(Boolean(esPersonal));
 
   if (cargando) return <div className="centrado"><p className="tenue">Cargando…</p></div>;
   if (!sesion) return <Login />;
+  if (definirContrasena) return <NuevaContrasena />;
 
   if (perfil?.sinPerfil || !perfil?.activo) {
     return (
