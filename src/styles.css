@@ -369,3 +369,23 @@ h3 { font-size: .95rem; margin: 16px 0 6px; }
   background: var(--oro); color: var(--azul); font-size: .78rem; font-weight: 700; text-align: center; }
 .texto-original { max-height: 360px; overflow: auto; white-space: pre-wrap; margin-top: 10px; }
 details.tarjeta summary { cursor: pointer; font-weight: 600; color: var(--azul); }
+
+/* Calendario: conmutador Semana / Mes y vista mensual */
+.conmutador { display: inline-flex; }
+.conmutador .btn { border-radius: 0; }
+.conmutador .btn:first-child { border-radius: 6px 0 0 6px; }
+.conmutador .btn:last-child { border-radius: 0 6px 6px 0; margin-left: -1px; }
+.conmutador .btn.activo { background: var(--azul); border-color: var(--azul); color: #fff; }
+.cal-mes { display: grid; grid-template-columns: repeat(7, minmax(110px, 1fr)); min-width: 780px; border: 1px solid var(--borde); border-radius: 6px; overflow: hidden; }
+.cal-mes-titulo { text-align: center; padding: 6px 4px; font-size: .85rem; color: var(--tenue); background: var(--fondo); border-bottom: 1px solid var(--borde); }
+.cal-mes-dia { min-height: 108px; padding: 4px; border-left: 1px solid var(--borde); border-bottom: 1px solid var(--borde); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cal-mes-dia:nth-child(7n + 1) { border-left: none; }
+.cal-mes-fuera { background: #f6f7f9; }
+.cal-mes-fuera .cal-mes-num { color: #b0b6c0; }
+.cal-mes-num { align-self: flex-end; font-size: .85rem; font-weight: 600; color: var(--texto, #1f2937); text-decoration: none; padding: 0 4px; border-radius: 4px; }
+.cal-mes-num:hover { background: var(--oro-claro); }
+.cal-mes-dia.cal-hoy .cal-mes-num { background: var(--azul); color: #fff; }
+.cal-mes-evento { display: block; font-size: .74rem; line-height: 1.3; padding: 1px 5px; border-radius: 4px; border-left: 3px solid currentColor;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none; }
+.cal-mes-evento:hover { filter: brightness(.95); }
+.cal-mes-mas { font-size: .74rem; color: var(--tenue); padding: 0 5px; }

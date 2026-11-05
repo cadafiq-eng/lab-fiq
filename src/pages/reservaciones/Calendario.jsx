@@ -4,7 +4,8 @@ import { supabase, mensajeError } from '../../supabase';
 import { Aviso } from '../../componentes';
 import { diaLocal } from '../../util';
 import { useConfiguracion } from '../prestamos/comun';
-import { ACTIVIDADES, DIAS_CORTOS, MESES, PestanasReservaciones, horario, lunesDe, mismoDia, sumarDias } from './comun';
+import { ACTIVIDADES, CambiarVista, DIAS_CORTOS, MESES, PestanasReservaciones, horario, lunesDe, mismoDia, sumarDias, vistaRecordada } from './comun';
+import CalendarioMes from './CalendarioMes';
 
 const ALTO_HORA = 44; // px por hora
 
@@ -33,6 +34,12 @@ function acomodar(lista) {
 }
 
 export default function Calendario() {
+  const [params] = useSearchParams();
+  const vista = params.get('vista') ?? (params.get('semana') ? 'semana' : vistaRecordada());
+  return vista === 'mes' ? <CalendarioMes /> : <VistaSemana />;
+}
+
+function VistaSemana() {
   const navegar = useNavigate();
   const [params, setParams] = useSearchParams();
   const config = useConfiguracion();
@@ -74,7 +81,7 @@ export default function Calendario() {
   const titulo = lunes.getMonth() === domingo.getMonth()
     ? `${lunes.getDate()}–${domingo.getDate()} ${MESES[lunes.getMonth()]} ${lunes.getFullYear()}`
     : `${lunes.getDate()} ${MESES[lunes.getMonth()]} – ${domingo.getDate()} ${MESES[domingo.getMonth()]} ${domingo.getFullYear()}`;
-  const irA = (d) => setParams(d ? { semana: diaLocal(d) } : {});
+  const irA = (d) => setParams(d ? { vista: 'semana', semana: diaLocal(d) } : { vista: 'semana' });
 
   return (
     <>
@@ -92,7 +99,10 @@ export default function Calendario() {
             <button className="btn btn-chico" onClick={() => irA(sumarDias(lunes, 7))} aria-label="Semana siguiente">Siguiente ›</button>
           </div>
           <h2>{titulo}</h2>
-          <label className="casilla chico"><input type="checkbox" checked={verCanceladas} onChange={(e) => setVerCanceladas(e.target.checked)} />Ver canceladas</label>
+          <div className="fila-botones">
+            <CambiarVista vista="semana" fecha={diaLocal(lunes <= new Date() && new Date() < sumarDias(lunes, 7) ? new Date() : lunes)} />
+            <label className="casilla chico"><input type="checkbox" checked={verCanceladas} onChange={(e) => setVerCanceladas(e.target.checked)} />Ver canceladas</label>
+          </div>
         </div>
         <div className="leyenda">
           {Object.entries(ACTIVIDADES).map(([k, a]) => <span key={k} className={'etiqueta ' + a.color}>{a.corto}</span>)}
