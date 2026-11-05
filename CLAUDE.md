@@ -66,6 +66,8 @@ Laboratorios de la FIQ y su Manual de Seguridad. Responsable: Dr. Luis Antonio C
   en una solicitud (`0012`): `registrar_acceso_grupo`, folio único por persona.
   Bandeja automática (`0009`): flujo estándar del laboratorio → Postmark Inbound → `recibir-solicitud`
   → `solicitudes_entrantes`; registrar con el folio la marca como registrada; descartar exige motivo.
+  La app no responde la aprobación (Graph Approvals es beta y exige registro en Entra ID): guarda el
+  enlace (`0013`, `enlace_aprobacion`) y muestra «Aprobar en Power Automate» tras registrar.
 - Carga inicial: plantillas Excel en `public/plantillas/` (generadas con openpyxl; sin celdas de texto
   vacío, que `read-excel-file` no acepta). Importación atómica con `importar_articulos` e
   `importar_equipos` (solo Administrador).

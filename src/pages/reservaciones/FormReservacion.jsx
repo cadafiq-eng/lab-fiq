@@ -169,6 +169,7 @@ export default function FormReservacion() {
       }
       destino = `/reservaciones/calendario?semana=${desdeQ}`;
       if (!error && n > 1) destino += `&series=${n}`;
+      if (!error && extra.folio_solicitud) destino += `&solicitud=${extra.folio_solicitud}${importada?.enlace_aprobacion ? `&aprobar=${encodeURIComponent(importada.enlace_aprobacion)}` : ''}`;
     }
     setOcupado(false);
     if (error) return setMensaje({ tipo: 'error', texto: mensajeError(error) });

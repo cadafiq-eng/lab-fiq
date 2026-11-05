@@ -6,6 +6,7 @@ import { diaLocal } from '../../util';
 import { useConfiguracion } from '../prestamos/comun';
 import { ACTIVIDADES, CambiarVista, DIAS_CORTOS, MESES, PestanasReservaciones, horario, lunesDe, mismoDia, sumarDias, vistaRecordada } from './comun';
 import CalendarioMes from './CalendarioMes';
+import { BotonAprobar } from '../solicitudes/aprobacion';
 
 const ALTO_HORA = 44; // px por hora
 
@@ -91,6 +92,12 @@ function VistaSemana() {
       </div>
       <PestanasReservaciones />
       <Aviso mensaje={mensaje ?? (params.get('series') ? { tipo: 'ok', texto: `Se reservaron ${params.get('series')} sesiones.` } : null)} />
+      {params.get('solicitud') && (
+        <div className="siguiente-paso">
+          <p><strong>Reservación de la solicitud FIQ {params.get('solicitud')} registrada.</strong> Último paso: apruebe la solicitud en Power Automate.</p>
+          <BotonAprobar enlace={params.get('aprobar')} principal />
+        </div>
+      )}
       <section className="tarjeta una-columna">
         <div className="encabezado calendario-barra">
           <div className="fila-botones">

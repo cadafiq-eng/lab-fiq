@@ -47,6 +47,31 @@ function aTexto(html: string) {
     .replace(/[ \t]+/g, " ").replace(/\n\s*\n+/g, "\n").trim();
 }
 
+// Enlace de la aprobación de Power Automate (botón «Aprobar» o «Ver aprobación» del correo).
+// Solo se aceptan direcciones de Microsoft; los enlaces protegidos de Outlook
+// (safelinks) se desenvuelven.
+const HOSTS_MS = /(^|\.)(powerautomate\.com|flow\.microsoft\.com|teams\.microsoft\.com|office\.com)$/i;
+function enlaceAprobacion(html: string, texto: string): string | null {
+  const candidatos: { url: string; etiqueta: string }[] = [];
+  for (const m of html.matchAll(/<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
+    candidatos.push({ url: m[1].replace(/&amp;/g, "&"), etiqueta: m[2].replace(/<[^>]+>/g, " ") });
+  }
+  for (const m of texto.matchAll(/https:\/\/[^\s<>"')\]]+/g)) candidatos.push({ url: m[0], etiqueta: "" });
+  const validos = candidatos.map(({ url, etiqueta }) => {
+    try {
+      let u = new URL(url);
+      if (/safelinks\.protection\.outlook\.com$/i.test(u.hostname) && u.searchParams.get("url")) u = new URL(u.searchParams.get("url")!);
+      if (u.protocol !== "https:" || !HOSTS_MS.test(u.hostname) || !/approval/i.test(u.pathname + u.search)) return null;
+      return { url: u.toString(), etiqueta: etiqueta.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() };
+    } catch { return null; }
+  }).filter((x): x is { url: string; etiqueta: string } => x !== null);
+  // Se prefiere el que abre la aprobación sin responderla («Ver», «Aprobar»), nunca «Rechazar»
+  const elegido = validos.find((x) => /ver|abrir|view|open/.test(x.etiqueta))
+    ?? validos.find((x) => /aprobar|approve/.test(x.etiqueta))
+    ?? validos.find((x) => !/rechazar|reject/.test(x.etiqueta));
+  return elegido ? elegido.url.slice(0, 2000) : null;
+}
+
 function clasificar(texto: string, asunto: string) {
   const t = (asunto + "\n" + texto).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const tipo = /nombre de la practica\s*:|solicitud de practica/.test(t) ? "practica"
@@ -69,6 +94,7 @@ Deno.serve(async (req) => {
   const texto = (String(correo.TextBody ?? "").trim() || aTexto(String(correo.HtmlBody ?? ""))).slice(0, 100000);
   if (!texto) return respuesta({ ok: true, ignorado: "sin texto" });
   const { tipo, folio } = clasificar(texto, asunto);
+  const enlace = enlaceAprobacion(String(correo.HtmlBody ?? ""), String(correo.TextBody ?? ""));
 
   const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     { auth: { persistSession: false } });
@@ -83,7 +109,7 @@ Deno.serve(async (req) => {
   const { error } = await db.from("solicitudes_entrantes").insert({
     mensaje_id: String(correo.MessageID ?? "") || null,
     remitente: String((correo.FromFull as { Email?: string })?.Email ?? correo.From ?? "").slice(0, 300),
-    asunto, texto, tipo, folio,
+    asunto, texto, tipo, folio, enlace_aprobacion: enlace,
   });
   if (error && !error.message.includes("duplicate key")) {
     console.error(error.message);
