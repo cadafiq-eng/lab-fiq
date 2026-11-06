@@ -59,7 +59,8 @@ Laboratorios de la FIQ y su Manual de Seguridad. Responsable: Dr. Luis Antonio C
   Series semanales (máx. 26) o diarias (lun–vie o todos los días, máx. 60) (`0010`), o días con horario
   distinto (`registrar_reservacion_sesiones`, máx. 60, `0011`). Uso continuo de
   varios días (máx. 14): cuenta como fuera de horario (Administrador + contacto de emergencia).
-  La terminal ve la agenda con `terminal_agenda` (sin datos personales).
+  La terminal ve la agenda con `terminal_agenda` (sin datos personales). Preparación de material (`0014`):
+  tabla `preparacion_reservaciones`, solo con `marcar_preparacion`.
 - Solicitudes FIQ (`0008`): llegan como aprobaciones de Power Automate de laboratorios.fiq (flujo ajeno,
   sin conector). Se importan pegando el texto (`src/pages/solicitudes/lector.js`); folio FIQ único por
   autorización y por sesión programada. Sin matrícula → persona externa (`registrar_acceso_solicitud`). Varias personas

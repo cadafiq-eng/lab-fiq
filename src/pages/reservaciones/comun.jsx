@@ -7,6 +7,7 @@ export function PestanasReservaciones() {
       <NavLink to="/reservaciones/calendario">Calendario</NavLink>
       <NavLink to="/reservaciones/nueva">Nueva reservación</NavLink>
       <NavLink to="/reservaciones/lista">Lista</NavLink>
+      <NavLink to="/reservaciones/preparacion">Preparación de material</NavLink>
       <NavLink to="/solicitudes">Importar solicitud FIQ</NavLink>
     </nav>
   );

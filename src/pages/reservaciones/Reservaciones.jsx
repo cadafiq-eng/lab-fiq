@@ -3,6 +3,7 @@ import Calendario from './Calendario';
 import FormReservacion from './FormReservacion';
 import Lista from './Lista';
 import Detalle from './Detalle';
+import Preparacion from './Preparacion';
 
 export default function Reservaciones() {
   return (
@@ -11,6 +12,7 @@ export default function Reservaciones() {
       <Route path="nueva" element={<FormReservacion key="nueva" />} />
       <Route path="editar/:id" element={<FormReservacion key="editar" />} />
       <Route path="lista" element={<Lista />} />
+      <Route path="preparacion" element={<Preparacion />} />
       <Route path="detalle/:id" element={<Detalle />} />
       <Route path="*" element={<Navigate to="calendario" replace />} />
     </Routes>
