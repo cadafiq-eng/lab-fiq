@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { supabase, mensajeError } from '../../supabase';
 import { useSesion } from '../../auth';
 import { Aviso, Etiqueta, Modal } from '../../componentes';
@@ -10,6 +10,7 @@ import { ACTIVIDADES, EstadoReservacion, RESIDUOS, SELECT_RESERVACION, diaTexto,
 
 export default function Detalle() {
   const { id } = useParams();
+  const [params] = useSearchParams();
   const { esAdmin } = useSesion();
   const config = useConfiguracion();
   const [r, setR] = useState(null);
@@ -60,7 +61,7 @@ export default function Detalle() {
       {r.estado === 'programada' && (
         <section className="tarjeta una-columna">
           <h2>Asistencia</h2>
-          <Asistencia r={r} alCambiar={(a) => setR({ ...r, asistencias_reservacion: a })} />
+          <Asistencia r={r} abrirCon={params.get('registrar')} alCambiar={(a) => setR({ ...r, asistencias_reservacion: a })} />
         </section>
       )}
       <div className="dos-columnas">

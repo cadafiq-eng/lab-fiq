@@ -4,6 +4,7 @@ import { supabase, mensajeError } from '../supabase';
 import { useSesion } from '../auth';
 import { Aviso } from '../componentes';
 import { nombreRol } from '../App';
+import { activarAvisosAsistencia, avisosAsistenciaActivos } from '../avisosPracticas';
 
 export default function MiCuenta() {
   const { sesion, perfil } = useSesion();
@@ -51,6 +52,33 @@ export default function MiCuenta() {
         </label>
         <button className="btn btn-primario" disabled={ocupado}>{ocupado ? 'Guardando…' : 'Cambiar contraseña'}</button>
       </form>
+      <AvisosCuenta />
     </>
+  );
+}
+
+// Preferencias de avisos de este navegador
+function AvisosCuenta() {
+  const [activos, setActivos] = useState(avisosAsistenciaActivos());
+  const soportado = typeof window !== 'undefined' && 'Notification' in window;
+  const [permiso, setPermiso] = useState(soportado ? Notification.permission : 'denied');
+  return (
+    <section className="tarjeta formulario" style={{ maxWidth: 520, marginTop: 20 }}>
+      <h2>Avisos en esta computadora</h2>
+      <label className="casilla">
+        <input type="checkbox" checked={activos} onChange={(e) => { activarAvisosAsistencia(e.target.checked); setActivos(e.target.checked); }} />
+        Preguntar si deseo registrar la entrada y la salida de las prácticas
+      </label>
+      <p className="tenue nota">Aparece un aviso 10 minutos antes de que empiece cada práctica de hoy (si no se ha registrado la entrada)
+        y al llegar su hora de término (si falta la salida). Puede posponerlo 10 minutos o descartarlo por hoy.</p>
+      {activos && soportado && permiso !== 'granted' && (
+        <p className="tenue nota">
+          {permiso === 'denied' ? 'Los avisos de Windows/del navegador están bloqueados para este sitio; actívelos en la configuración del navegador si los quiere también fuera de la app.'
+            : <>¿También quiere el aviso del sistema (aunque la app esté en otra pestaña)?{' '}
+              <button type="button" className="btn-enlace" onClick={() => Notification.requestPermission().then(setPermiso)}>Permitir avisos</button></>}
+        </p>
+      )}
+      {activos && permiso === 'granted' && <p className="tenue nota">Los avisos del sistema están permitidos en este navegador.</p>}
+    </section>
   );
 }
