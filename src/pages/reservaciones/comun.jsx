@@ -57,12 +57,18 @@ export function EtiquetaActividad({ actividad }) {
   return <span className={'etiqueta ' + a.color}>{a.corto}</span>;
 }
 
+// Con la asistencia (si la consulta la trae, campo asistencias_reservacion)
+// distingue lo realizado de lo que no tuvo registro.
 export function EstadoReservacion({ r }) {
   if (r.estado === 'cancelada') return <Etiqueta tono="mal">Cancelada</Etiqueta>;
+  const conAsistencia = 'asistencias_reservacion' in r;
+  const a = r.asistencias_reservacion;
+  if (a?.salida) return <Etiqueta tono="bien">Realizada</Etiqueta>;
+  if (a) return <Etiqueta tono="bien">En curso</Etiqueta>;
   const ahora = new Date();
-  if (new Date(r.fin) < ahora) return <Etiqueta tono="gris">Realizada</Etiqueta>;
-  if (new Date(r.inicio) <= ahora) return <Etiqueta tono="bien">En curso</Etiqueta>;
-  return <Etiqueta tono="aviso">Programada</Etiqueta>;
+  if (new Date(r.fin) < ahora) return conAsistencia ? <Etiqueta tono="aviso">Sin asistencia</Etiqueta> : <Etiqueta tono="gris">Realizada</Etiqueta>;
+  if (new Date(r.inicio) <= ahora) return conAsistencia ? <Etiqueta tono="aviso">Por iniciar</Etiqueta> : <Etiqueta tono="bien">En curso</Etiqueta>;
+  return <Etiqueta tono="gris">Programada</Etiqueta>;
 }
 
 export const SELECT_RESERVACION = `id, serie_id, inicio, fin, actividad, ocupa_todo, titulo, responsable, responsable_correo,

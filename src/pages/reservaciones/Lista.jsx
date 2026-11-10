@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, mensajeError } from '../../supabase';
 import { Aviso, Etiqueta } from '../../componentes';
-import { descargarCSV, diaLocal, fecha, hoyISO, normalizar } from '../../util';
+import { descargarCSV, diaLocal, fecha, fechaHora, hoyISO, normalizar } from '../../util';
 import { ACTIVIDADES, EstadoReservacion, EtiquetaActividad, PestanasReservaciones, RESIDUOS, hhmm, horario } from './comun';
 
 export default function Lista() {
@@ -25,7 +25,7 @@ export default function Lista() {
     if (!desde || !hasta) return;
     setLista(null);
     const fin = new Date(hasta + 'T00:00'); fin.setDate(fin.getDate() + 1);
-    let q = supabase.from('reservaciones').select('*').gt('fin', new Date(desde + 'T00:00').toISOString())
+    let q = supabase.from('reservaciones').select('*, asistencias_reservacion(*)').gt('fin', new Date(desde + 'T00:00').toISOString())
       .lt('inicio', fin.toISOString()).order('inicio').limit(5000);
     if (actividad) q = q.eq('actividad', actividad);
     if (!verCanceladas) q = q.eq('estado', 'programada');
@@ -42,14 +42,20 @@ export default function Lista() {
     descargarCSV(`reservaciones_${desde}_${hasta}.csv`,
       ['Fecha', 'Inicio', 'Fecha de término', 'Fin', 'Horas', 'Actividad', 'Título', 'Responsable', 'Correo', 'Teléfono', 'Usuarios', 'Procedencia', 'Institución',
         'Asignatura', 'Programa educativo', 'Semestre', 'Alumnos', 'Equipos de alumnos', 'Ocupa todo el laboratorio', 'Equipos reservados',
-        'Materiales', 'Reactivos', 'Alumnos por programa', 'Solicitud FIQ', 'Residuos', 'Contacto de emergencia', 'Observaciones', 'Estado', 'Motivo de cancelación'],
+        'Materiales', 'Reactivos', 'Alumnos por programa', 'Solicitud FIQ', 'Residuos', 'Contacto de emergencia', 'Observaciones', 'Estado', 'Motivo de cancelación',
+        'Entrada real', 'Salida real', 'Dirigió', 'Asistentes FIQ', 'Asistentes externos', 'Quiénes asistieron', 'Observaciones de la práctica'],
       visibles.map((r) => [fecha(diaLocal(r.inicio)), hhmm(r.inicio), fecha(diaLocal(r.fin)), hhmm(r.fin),
         ((new Date(r.fin) - new Date(r.inicio)) / 3600000).toFixed(2), ACTIVIDADES[r.actividad]?.corto, r.titulo, r.responsable,
         r.responsable_correo, r.responsable_telefono, r.usuarios, r.procedencia, r.institucion, r.asignatura, r.programa_educativo,
         r.semestre, r.num_alumnos, r.num_equipos_trabajo, r.ocupa_todo ? 'Sí' : 'No',
         (r.equipos ?? []).map((e) => equipos[e]).join('; '), r.materiales, r.reactivos,
         Object.entries(r.alumnos_pe ?? {}).filter(([, n]) => n > 0).map(([k, n]) => `${k}: ${n}`).join('; '), r.folio_solicitud, (r.residuos ?? []).map((g) => RESIDUOS[g]).join('; '),
-        r.contacto_emergencia, r.observaciones, r.estado, r.motivo_cancelacion]));
+        r.contacto_emergencia, r.observaciones,
+        r.estado === 'cancelada' ? 'Cancelada' : r.asistencias_reservacion ? (r.asistencias_reservacion.salida ? 'Realizada' : 'En curso') : new Date(r.fin) < new Date() ? 'Sin asistencia' : 'Programada',
+        r.motivo_cancelacion,
+        r.asistencias_reservacion ? fechaHora(r.asistencias_reservacion.entrada) : '', r.asistencias_reservacion?.salida ? fechaHora(r.asistencias_reservacion.salida) : '',
+        r.asistencias_reservacion?.responsable, r.asistencias_reservacion?.alumnos_fiq, r.asistencias_reservacion?.externos,
+        r.asistencias_reservacion?.descripcion, r.asistencias_reservacion?.observaciones]));
   }
 
   return (

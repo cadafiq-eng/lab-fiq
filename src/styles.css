@@ -421,3 +421,9 @@ details.tarjeta summary { cursor: pointer; font-weight: 600; color: var(--azul);
 .prep-check { font-weight: 600; }
 .prep-check input { width: 20px; height: 20px; }
 .prep-lista { border-left-color: var(--verde, #2e7d32); background: #f3faf4; }
+
+/* Asistencia de la práctica */
+.asistencia { display: grid; gap: 8px; }
+.asistencia p { margin: 0; }
+.asistencia.compacta { border-top: 1px dashed var(--borde); padding-top: 8px; margin-top: 4px; }
+.asistencia-form .fila-campos input { min-width: 0; }

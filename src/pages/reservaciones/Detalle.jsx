@@ -5,6 +5,7 @@ import { useSesion } from '../../auth';
 import { Aviso, Etiqueta, Modal } from '../../componentes';
 import { diaLocal, fechaHora } from '../../util';
 import { useConfiguracion } from '../prestamos/comun';
+import Asistencia from './Asistencia';
 import { ACTIVIDADES, EstadoReservacion, RESIDUOS, SELECT_RESERVACION, diaTexto, fueraDeHorario, horario, mismoDia } from './comun';
 
 export default function Detalle() {
@@ -18,14 +19,14 @@ export default function Detalle() {
   const [cancelar, setCancelar] = useState(false);
 
   async function cargar() {
-    const { data, error } = await supabase.from('reservaciones').select(SELECT_RESERVACION).eq('id', id).single();
+    const { data, error } = await supabase.from('reservaciones').select(`${SELECT_RESERVACION}, asistencias_reservacion(*)`).eq('id', id).single();
     if (error) return setMensaje({ tipo: 'error', texto: mensajeError(error) });
     setR(data);
     if (data.equipos?.length) {
       supabase.from('equipos').select('id, codigo, nombre').in('id', data.equipos).then(({ data: e }) => setEquipos(e ?? []));
     }
     if (data.serie_id) {
-      supabase.from('reservaciones').select('id, inicio, fin, estado').eq('serie_id', data.serie_id).order('inicio')
+      supabase.from('reservaciones').select('id, inicio, fin, estado, asistencias_reservacion(entrada, salida)').eq('serie_id', data.serie_id).order('inicio')
         .then(({ data: s }) => setSerie(s ?? []));
     }
   }
@@ -48,13 +49,19 @@ export default function Detalle() {
         {puedeModificar && (
           <div className="fila-botones">
             <Link className="btn" to={`/reservaciones/editar/${r.id}`}>Editar</Link>
-            <button className="btn" onClick={() => setCancelar(true)}>Cancelar reservación</button>
+            {!r.asistencias_reservacion && <button className="btn" onClick={() => setCancelar(true)}>Cancelar reservación</button>}
           </div>
         )}
       </div>
       <Aviso mensaje={mensaje} />
       {r.estado === 'programada' && fuera && !esAdmin && (
         <p className="aviso aviso-alerta">Es una reservación fuera de horario, en fin de semana o de uso continuo: solo el Administrador la modifica.</p>
+      )}
+      {r.estado === 'programada' && (
+        <section className="tarjeta una-columna">
+          <h2>Asistencia</h2>
+          <Asistencia r={r} alCambiar={(a) => setR({ ...r, asistencias_reservacion: a })} />
+        </section>
       )}
       <div className="dos-columnas">
         <section className="tarjeta">
