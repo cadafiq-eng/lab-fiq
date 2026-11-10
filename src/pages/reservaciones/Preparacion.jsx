@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase, mensajeError } from '../../supabase';
 import { Aviso, Etiqueta } from '../../componentes';
 import { diaLocal, hoyISO } from '../../util';
+import Asistencia from './Asistencia';
 import { EtiquetaActividad, PestanasReservaciones, RESIDUOS, diaTexto, horario } from './comun';
 
 // Preparación de material: una tarjeta por reservación con lo que necesita
@@ -27,7 +28,7 @@ export default function Preparacion() {
   function cargar() {
     const ini = new Date(desde + 'T00:00'); const fin = new Date(ini); fin.setDate(fin.getDate() + Number(dias));
     supabase.from('reservaciones')
-      .select('id, inicio, fin, actividad, titulo, responsable, usuarios, asignatura, num_alumnos, num_equipos_trabajo, equipos, materiales, reactivos, residuos, observaciones, folio_solicitud')
+      .select('id, inicio, fin, actividad, titulo, responsable, usuarios, asignatura, num_alumnos, num_equipos_trabajo, equipos, materiales, reactivos, residuos, observaciones, folio_solicitud, procedencia, alumnos_pe, estado, asistencias_reservacion(*)')
       .eq('estado', 'programada').gt('fin', ini.toISOString()).lt('inicio', fin.toISOString()).order('inicio').limit(500)
       .then(({ data, error }) => {
         if (error) return setMensaje({ tipo: 'error', texto: mensajeError(error) });
@@ -115,6 +116,9 @@ export default function Preparacion() {
                     <ul className="lista-simple">{r.equipos.map((e) => <li key={e}>{equipos[e] ?? 'Equipo'}</li>)}</ul></>}
                   {(r.residuos ?? []).length > 0 && <><h4>Residuos</h4><p className="prep-texto chico">{r.residuos.map((g) => RESIDUOS[g]).join('; ')}</p></>}
                   {r.observaciones && <p className="tenue chico">{r.observaciones}</p>}
+                  {diaLocal(r.inicio) <= hoyISO() && (
+                    <Asistencia r={r} compacta alCambiar={(a) => setLista((l) => l.map((x) => (x.id === r.id ? { ...x, asistencias_reservacion: a } : x)))} />
+                  )}
                   <label className="prep-nota">Nota de preparación
                     <input defaultValue={p?.nota ?? ''} key={p?.nota ?? ''} placeholder="Ej. material en la mesa 2"
                       onBlur={(e) => guardarNota(r, e.target.value)} />

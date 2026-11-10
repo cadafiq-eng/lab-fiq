@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabase';
 import { useSesion } from '../auth';
-import { horario } from './reservaciones/comun';
+import { EstadoReservacion, horario } from './reservaciones/comun';
 
 export default function Inicio() {
   const { perfil } = useSesion();
@@ -14,7 +14,7 @@ export default function Inicio() {
       supabase.from('v_mantenimientos_alerta').select('*').order('proximo_mantenimiento'),
       supabase.from('v_prestamos_vencidos').select('*').order('fecha_limite'),
       supabase.from('v_stock_bajo').select('*').order('nombre'),
-      supabase.from('reservaciones').select('id, inicio, fin, titulo, actividad, ocupa_todo')
+      supabase.from('reservaciones').select('id, inicio, fin, titulo, actividad, ocupa_todo, estado, asistencias_reservacion(entrada, salida)')
         .eq('estado', 'programada').gt('fin', hoyInicio().toISOString()).lt('inicio', hoyInicio(1).toISOString()).order('inicio'),
       supabase.from('solicitudes_entrantes').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente'),
     ]).then(([p, m, v, s, r, f]) => setDatos({ presentes: p.data ?? [], mant: m.data ?? [], vencidos: v.data ?? [], stock: s.data ?? [], hoy: r.data ?? [], fiq: f.count ?? 0 }));
@@ -49,7 +49,7 @@ export default function Inicio() {
                   {datos.hoy.map((x) => (
                     <tr key={x.id}><td className="sin-salto">{horario(x)}</td>
                       <td><Link to={`/reservaciones/detalle/${x.id}`}>{x.titulo}</Link></td>
-                      <td className="der">{x.ocupa_todo && <span className="etiqueta etq-gris">todo el lab</span>}</td></tr>
+                      <td className="der sin-salto">{x.ocupa_todo && <span className="etiqueta etq-gris">todo el lab</span>} <EstadoReservacion r={x} /></td></tr>
                   ))}
                 </tbody></table>
               )}
