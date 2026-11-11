@@ -47,7 +47,7 @@ export default function App() {
     <div className="marco">
       <aside className="lateral">
         <div className="marca">
-          <span className="marca-sigla">FIQ</span>
+          <img className="marca-icono" src={`${import.meta.env.BASE_URL}iconos/icono.svg`} alt="" /><span className="marca-sigla">FIQ</span>
           <span>Laboratorio</span>
         </div>
         <nav>

@@ -28,7 +28,7 @@ export default function Login() {
       <div className="centrado fondo-login">
         <form className="tarjeta login" onSubmit={recuperar}>
           <div className="marca marca-login">
-            <span className="marca-sigla">FIQ</span>
+            <img className="marca-icono" src={`${import.meta.env.BASE_URL}iconos/icono.svg`} alt="" /><span className="marca-sigla">FIQ</span>
             <span>Laboratorio</span>
           </div>
           <h1>Restablecer contraseña</h1>
@@ -63,7 +63,7 @@ export default function Login() {
     <div className="centrado fondo-login">
       <form className="tarjeta login" onSubmit={entrar}>
         <div className="marca marca-login">
-          <span className="marca-sigla">FIQ</span>
+          <img className="marca-icono" src={`${import.meta.env.BASE_URL}iconos/icono.svg`} alt="" /><span className="marca-sigla">FIQ</span>
           <span>Laboratorio</span>
         </div>
         <h1>Iniciar sesión</h1>

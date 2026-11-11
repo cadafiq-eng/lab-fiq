@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Laboratorio FIQ-UADY</title>
+  <defs>
+    <linearGradient id="fondo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#24406f"/>
+      <stop offset="1" stop-color="#14284b"/>
+    </linearGradient>
+    <linearGradient id="liquido" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e2b55a"/>
+      <stop offset="1" stop-color="#b8892b"/>
+    </linearGradient>
+    <clipPath id="matraz">
+      <path d="M216 120 h80 v86 l92 158 a28 28 0 0 1 -24 42 h-216 a28 28 0 0 1 -24 -42 l92 -158 z"/>
+    </clipPath>
+  </defs>
+  <rect width="512" height="512" rx="0" fill="url(#fondo)"/>
+  <g transform="translate(51.2 61) scale(.8)">
+  <!-- líquido -->
+  <g clip-path="url(#matraz)">
+    <path d="M100 300 q40 -22 80 0 t80 0 t80 0 t80 0 V440 H100 z" fill="url(#liquido)"/>
+    <circle cx="232" cy="350" r="11" fill="#f5ecd9" fill-opacity=".85"/>
+    <circle cx="276" cy="374" r="7" fill="#f5ecd9" fill-opacity=".7"/>
+    <circle cx="300" cy="336" r="5" fill="#f5ecd9" fill-opacity=".7"/>
+  </g>
+  <!-- matraz Erlenmeyer -->
+  <path d="M216 120 h80 v86 l92 158 a28 28 0 0 1 -24 42 h-216 a28 28 0 0 1 -24 -42 l92 -158 z"
+        fill="none" stroke="#f5ecd9" stroke-width="16" stroke-linejoin="round"/>
+  <rect x="196" y="100" width="120" height="26" rx="13" fill="#f5ecd9"/>
+  <!-- hoja (alimentos) -->
+  <path d="M256 92 c-6 -30 14 -52 46 -56 c4 32 -16 54 -46 56 z" fill="#b8892b"/>
+  <path d="M256 92 c8 -16 20 -28 34 -36" fill="none" stroke="#14284b" stroke-width="4" stroke-linecap="round"/>
+  </g>
+</svg>

@@ -57,6 +57,8 @@ code { background: var(--oro-claro); padding: 0 4px; border-radius: 4px; }
   background: var(--oro); color: var(--azul); font-weight: 700; padding: 4px 8px;
   border-radius: 6px; letter-spacing: .05em;
 }
+.marca-icono { width: 34px; height: 34px; flex: none; }
+.terminal .marca-icono { width: 44px; height: 44px; }
 
 /* Tarjetas y formularios */
 .tarjeta { background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); padding: 20px; }
