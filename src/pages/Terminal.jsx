@@ -74,7 +74,7 @@ export default function Terminal() {
   return (
     <div className="terminal">
       <header className="terminal-cabecera">
-        <div className="marca"><span className="marca-sigla">FIQ</span><span>Registro de acceso al laboratorio</span></div>
+        <div className="marca"><img className="marca-icono" src={`${import.meta.env.BASE_URL}iconos/icono.svg`} alt="" /><span className="marca-sigla">FIQ</span><span>Registro de acceso al laboratorio</span></div>
         <div className="terminal-reloj"><Reloj /><span className="tenue">{presentes} {presentes === 1 ? 'persona dentro' : 'personas dentro'}</span></div>
       </header>
 
