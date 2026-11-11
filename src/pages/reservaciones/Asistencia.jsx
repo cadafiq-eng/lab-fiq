@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase, mensajeError } from '../../supabase';
 import { Aviso, Etiqueta } from '../../componentes';
 import { aCampoFechaHora, deCampoFechaHora } from '../../util';
@@ -29,13 +29,19 @@ function horaPropuesta(r, cual) {
   return ahora;
 }
 
-export default function Asistencia({ r, alCambiar, compacta = false }) {
+export default function Asistencia({ r, alCambiar, compacta = false, abrirCon = null }) {
   const a = r.asistencias_reservacion ?? null;
   const [modo, setModo] = useState(null);   // 'inicio' | 'termino'
   const [f, setF] = useState(null);
   const [mensaje, setMensaje] = useState(null);
   const [ocupado, setOcupado] = useState(false);
   const futura = new Date(r.inicio).toDateString() !== new Date().toDateString() && new Date(r.inicio) > new Date();
+
+  // Desde el aviso «¿Desea registrar su entrada?» se abre directo el formulario
+  useEffect(() => {
+    if (abrirCon === 'inicio' && !a) abrir('inicio');
+    if (abrirCon === 'termino' && a && !a.salida) abrir('termino');
+  }, [abrirCon, r.id]);
 
   if (r.estado === 'cancelada') return null;
 
