@@ -13,6 +13,7 @@ import { usePendientesFIQ } from './pendientes';
 import Acceso from './pages/acceso/Acceso';
 import MiCuenta from './pages/MiCuenta';
 import NuevaContrasena from './pages/NuevaContrasena';
+import { AvisosAsistencia } from './avisosPracticas';
 import Equipos from './pages/equipos/Equipos';
 import Prestamos from './pages/prestamos/Prestamos';
 import Inventario from './pages/inventario/Inventario';
@@ -97,6 +98,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/inicio" replace />} />
         </Routes>
       </main>
+      <AvisosAsistencia />
     </div>
   );
 }
