@@ -1,11 +1,14 @@
 -- =====================================================================
--- Migración 0016: Solicitudes de mantenimiento de equipos
+-- Migración 0016: Solicitudes de mantenimiento de equipos y de servicios
 -- Ejecutar UNA sola vez en el SQL Editor de Supabase, después de 0015.
 --
--- El personal llena la solicitud (uno o varios equipos) y la app envía el
--- correo a los responsables de mantenimiento (Edge Function
+-- El personal llena la solicitud y la app envía el correo al responsable
+-- (Edge Function
 -- «enviar-solicitud-mantenimiento», con Postmark). La solicitud queda
--- guardada con su seguimiento:
+-- guardada con su seguimiento. Dos clases:
+--   * equipos   → mantenimiento de equipos (Mariana Martín)
+--   * servicios → instalaciones: electricidad, agua, aire, gas… (Francisco Dzul)
+-- Estados:
 --   por_enviar → enviada → en_proceso → atendida   (o cancelada, con motivo)
 --   * Al registrar un mantenimiento de un equipo solicitado, su renglón se
 --     liga; cuando todos están atendidos, la solicitud pasa a «atendida».
@@ -18,12 +21,17 @@ alter table configuracion
     '{mariana.martin@correo.uady.mx}',   -- mantenimiento de equipos (servicios: Francisco Dzul)
   add column if not exists mantenimiento_cc text[] not null default
     '{roger.bargas@correo.uady.mx,janice.chuc@correo.uady.mx,dalmira.rodriguez@correo.uady.mx}',
+  add column if not exists servicios_para text[] not null default
+    '{franciscoj.dzul@correo.uady.mx}',   -- mantenimiento de servicios e instalaciones
+  add column if not exists servicios_cc text[] not null default
+    '{roger.bargas@correo.uady.mx,janice.chuc@correo.uady.mx,dalmira.rodriguez@correo.uady.mx}',
   add column if not exists correo_remitente text not null default 'lab.tecnologiadealimentos@correo.uady.mx',
   add column if not exists nombre_remitente text not null default 'Laboratorio de Tecnología de Alimentos · FIQ-UADY';
 
 create table solicitudes_mantenimiento (
   id              uuid primary key default gen_random_uuid(),
   folio           int generated always as identity unique,
+  clase           text not null default 'equipos' check (clase in ('equipos', 'servicios')),
   observaciones   text,
   estado          text not null default 'por_enviar'
                   check (estado in ('por_enviar', 'enviada', 'en_proceso', 'atendida', 'cancelada')),
@@ -59,6 +67,20 @@ create table solicitud_mant_equipos (
 );
 create index solicitud_mant_equipos_equipo on solicitud_mant_equipos (equipo_id) where mantenimiento_id is null;
 
+-- Servicios e instalaciones del laboratorio
+create table solicitud_mant_servicios (
+  id              uuid primary key default gen_random_uuid(),
+  solicitud_id    uuid not null references solicitudes_mantenimiento (id),
+  orden           int not null,
+  area            text not null check (length(trim(area)) > 0),        -- dónde: área de trabajo, bodega 1, cuarto frío…
+  servicio        text not null check (servicio in ('electrico', 'hidraulico', 'aire', 'refrigeracion',
+                    'gas', 'vapor', 'obra_civil', 'otro')),
+  descripcion     text not null check (length(trim(descripcion)) > 0),
+  tipo            tipo_mantenimiento not null,   -- P/C
+  urgente         boolean not null default false,
+  atendido        boolean not null default false
+);
+
 create table solicitud_mant_seguimiento (
   id              uuid primary key default gen_random_uuid(),
   solicitud_id    uuid not null references solicitudes_mantenimiento (id),
@@ -70,7 +92,7 @@ create table solicitud_mant_seguimiento (
 create index solicitud_mant_seguimiento_sol on solicitud_mant_seguimiento (solicitud_id, fecha);
 
 do $$ declare t text; begin
-  foreach t in array array['solicitudes_mantenimiento', 'solicitud_mant_equipos', 'solicitud_mant_seguimiento'] loop
+  foreach t in array array['solicitudes_mantenimiento', 'solicitud_mant_equipos', 'solicitud_mant_servicios', 'solicitud_mant_seguimiento'] loop
     execute format('create trigger %I after insert or update or delete on %I for each row execute function tg_auditoria()', t || '_auditoria', t);
     execute format('alter table %I enable row level security', t);
     execute format('revoke all on %I from anon', t);
@@ -85,7 +107,7 @@ returns trigger language plpgsql as $$
 begin
   if new.para is distinct from old.para or new.cc is distinct from old.cc or (new.asunto is distinct from old.asunto and old.asunto <> 'pendiente')
      or new.observaciones is distinct from old.observaciones or new.creada_en is distinct from old.creada_en
-     or new.creada_por is distinct from old.creada_por then
+     or new.creada_por is distinct from old.creada_por or new.clase is distinct from old.clase then
     raise exception 'El contenido de la solicitud de mantenimiento no se modifica.';
   end if;
   if old.estado in ('atendida', 'cancelada') and new.estado is distinct from old.estado then
@@ -171,6 +193,90 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
+-- Solicitud de servicios. p_renglones:
+--   [{"area": "...", "servicio": "electrico|hidraulico|aire|refrigeracion|gas|vapor|obra_civil|otro",
+--     "descripcion": "...", "tipo": "preventivo|correctivo", "urgente": false}, ...]
+-- ---------------------------------------------------------------------
+create or replace function crear_solicitud_servicios(p_renglones jsonb, p_observaciones text default null)
+returns uuid language plpgsql security definer set search_path = public as $$
+declare
+  c        configuracion%rowtype;
+  v_id     uuid;
+  v_folio  int;
+  r        jsonb;
+  n        int := 0;
+  v_urg    boolean := false;
+begin
+  if not es_personal() then
+    raise exception 'No autorizado.' using errcode = '42501';
+  end if;
+  if jsonb_typeof(p_renglones) <> 'array' or jsonb_array_length(p_renglones) = 0 then
+    raise exception 'Agregue al menos un servicio.';
+  end if;
+  if jsonb_array_length(p_renglones) > 30 then
+    raise exception 'Una solicitud admite como máximo 30 servicios.';
+  end if;
+  select * into c from configuracion where id = 1;
+  if coalesce(cardinality(c.servicios_para), 0) = 0 then
+    raise exception 'No hay destinatarios configurados para las solicitudes de servicios (Configuración).';
+  end if;
+
+  insert into solicitudes_mantenimiento (clase, observaciones, para, cc, asunto)
+  values ('servicios', nullif(trim(coalesce(p_observaciones, '')), ''), c.servicios_para, c.servicios_cc, 'pendiente')
+  returning id, folio into v_id, v_folio;
+
+  for r in select value from jsonb_array_elements(p_renglones) loop
+    n := n + 1;
+    if coalesce(trim(r ->> 'area'), '') = '' then raise exception 'Renglón %: indique el área o lugar.', n; end if;
+    if coalesce(r ->> 'servicio', '') not in ('electrico', 'hidraulico', 'aire', 'refrigeracion', 'gas', 'vapor', 'obra_civil', 'otro') then
+      raise exception 'Renglón %: elija el tipo de servicio.', n;
+    end if;
+    if coalesce(trim(r ->> 'descripcion'), '') = '' then raise exception 'Renglón %: describa lo que se requiere.', n; end if;
+    if coalesce(r ->> 'tipo', '') not in ('preventivo', 'correctivo') then
+      raise exception 'Renglón %: indique si es preventivo o correctivo.', n;
+    end if;
+    insert into solicitud_mant_servicios (solicitud_id, orden, area, servicio, descripcion, tipo, urgente)
+    values (v_id, n, trim(r ->> 'area'), r ->> 'servicio', trim(r ->> 'descripcion'),
+            (r ->> 'tipo')::tipo_mantenimiento, coalesce((r ->> 'urgente')::boolean, false));
+    v_urg := v_urg or coalesce((r ->> 'urgente')::boolean, false);
+  end loop;
+
+  update solicitudes_mantenimiento
+  set asunto = format('%sSolicitud de mantenimiento de servicios – Laboratorio de Tecnología de Alimentos, FIQ (folio M-%s)',
+                      case when v_urg then 'URGENTE: ' else '' end, lpad(v_folio::text, 4, '0'))
+  where id = v_id;
+
+  insert into solicitud_mant_seguimiento (solicitud_id, estado, nota)
+  values (v_id, 'por_enviar', format('Solicitud de servicios creada con %s renglón(es).', n));
+  return v_id;
+end $$;
+
+-- Marcar un renglón de servicios como atendido (el mantenimiento de servicios no
+-- se registra en un equipo). Con todos atendidos, la solicitud pasa a «atendida».
+create or replace function atender_servicio(p_renglon uuid, p_nota text)
+returns void language plpgsql security definer set search_path = public as $$
+declare x solicitud_mant_servicios%rowtype; v_estado text;
+begin
+  if not es_personal() then
+    raise exception 'No autorizado.' using errcode = '42501';
+  end if;
+  select * into x from solicitud_mant_servicios where id = p_renglon;
+  if not found then raise exception 'El renglón no existe.'; end if;
+  select estado into v_estado from solicitudes_mantenimiento where id = x.solicitud_id for update;
+  if v_estado in ('atendida', 'cancelada') then raise exception 'La solicitud ya está cerrada.'; end if;
+  if x.atendido then raise exception 'Ese renglón ya está atendido.'; end if;
+  if coalesce(trim(p_nota), '') = '' then raise exception 'Escriba qué se hizo.'; end if;
+  update solicitud_mant_servicios set atendido = true where id = p_renglon;
+  insert into solicitud_mant_seguimiento (solicitud_id, nota)
+  values (x.solicitud_id, format('Atendido: %s (%s). %s', x.area, x.descripcion, trim(p_nota)));
+  if not exists (select 1 from solicitud_mant_servicios where solicitud_id = x.solicitud_id and not atendido) then
+    update solicitudes_mantenimiento set estado = 'atendida' where id = x.solicitud_id;
+    insert into solicitud_mant_seguimiento (solicitud_id, estado, nota)
+    values (x.solicitud_id, 'atendida', 'Todos los servicios de la solicitud están atendidos.');
+  end if;
+end $$;
+
+-- ---------------------------------------------------------------------
 -- Seguimiento: nota y, opcionalmente, cambio de estado.
 --   * «enviada» a mano solo desde «por_enviar» (si el correo se mandó por fuera).
 --   * «cancelada» y «atendida» exigen nota.
@@ -232,7 +338,8 @@ create trigger mantenimiento_atiende_solicitud after insert on mantenimientos
   for each row execute function tg_mantenimiento_atiende_solicitud();
 
 do $$ declare f text; begin
-  foreach f in array array['crear_solicitud_mantenimiento(jsonb,text)', 'seguimiento_solicitud_mantenimiento(uuid,text,text)'] loop
+  foreach f in array array['crear_solicitud_mantenimiento(jsonb,text)', 'crear_solicitud_servicios(jsonb,text)',
+                           'atender_servicio(uuid,text)', 'seguimiento_solicitud_mantenimiento(uuid,text,text)'] loop
     execute format('revoke execute on function %s from public, anon', f);
     execute format('grant execute on function %s to authenticated', f);
   end loop;

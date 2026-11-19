@@ -1,6 +1,7 @@
 // Edge Function: enviar-solicitud-mantenimiento
 // Envía por correo una solicitud de mantenimiento ya guardada en la app
-// (crear_solicitud_mantenimiento) a los destinatarios de Configuración.
+// (crear_solicitud_mantenimiento para equipos, crear_solicitud_servicios para
+// servicios e instalaciones) a los destinatarios que se copiaron de Configuración.
 //
 //   * La llama el personal desde la app con su sesión (Verify JWT activado).
 //   * El correo sale por Postmark desde el remitente de Configuración, que debe
@@ -27,16 +28,43 @@ type Renglon = {
   equipo: string; num_inventario: string; marca: string | null; modelo: string | null; descripcion: string;
   tipo: string; docencia: boolean; vinculacion: boolean; investigacion: boolean;
 };
+type RenglonServicio = { area: string; servicio: string; descripcion: string; tipo: string; urgente: boolean };
+const SERVICIOS: Record<string, string> = {
+  electrico: "Eléctrico", hidraulico: "Hidráulico (agua y drenaje)", aire: "Aire acondicionado y ventilación",
+  refrigeracion: "Refrigeración (cuartos fríos)", gas: "Gas", vapor: "Vapor y caldera",
+  obra_civil: "Obra civil (puertas, techos, pisos, mobiliario fijo)", otro: "Otro",
+};
 
-function armarCorreo(renglones: Renglon[], observaciones: string | null, firma: string, folio: string) {
-  const plural = renglones.length > 1;
-  const enc = ["EQUIPO", "NUM DE INV", "MARCA", "MODELO", "DESCRIPCIÓN", "P/C", "DOCENCIA", "VINCULACIÓN", "INVESTIGACIÓN"];
+// Tabla y textos de cada clase de solicitud
+function contenido(clase: string, equipos: Renglon[], servicios: RenglonServicio[]) {
+  if (clase === "servicios") {
+    const plural = servicios.length > 1;
+    return {
+      enc: ["ÁREA", "SERVICIO", "DESCRIPCIÓN", "P/C", "PRIORIDAD"], centradas: 3,
+      filas: servicios.map((r) => [r.area, SERVICIOS[r.servicio] ?? r.servicio, r.descripcion, PC[r.tipo] ?? r.tipo, r.urgente ? "URGENTE" : "Normal"]),
+      intro: `Por medio del presente, solicito de la manera más atenta ${plural ? "los siguientes servicios" : "el siguiente servicio"} de mantenimiento en las instalaciones del Laboratorio de Tecnología de Alimentos de la Facultad de Ingeniería Química:`,
+      nota: "P/C: preventivo / correctivo.",
+      texto: servicios.map((r, i) => `${i + 1}. ${r.area} · ${SERVICIOS[r.servicio] ?? r.servicio}${r.urgente ? " · URGENTE" : ""}\n   ${PC[r.tipo] ?? r.tipo} — ${r.descripcion}`),
+    };
+  }
+  const plural = equipos.length > 1;
+  return {
+    enc: ["EQUIPO", "NUM DE INV", "MARCA", "MODELO", "DESCRIPCIÓN", "P/C", "DOCENCIA", "VINCULACIÓN", "INVESTIGACIÓN"], centradas: 5,
+    filas: equipos.map((r) => [
+      r.equipo, r.num_inventario, r.marca || "—", r.modelo || "—", r.descripcion, PC[r.tipo] ?? r.tipo,
+      r.docencia ? "X" : "", r.vinculacion ? "X" : "", r.investigacion ? "X" : "",
+    ]),
+    intro: `Por medio del presente, solicito de la manera más atenta el mantenimiento ${plural ? "de los siguientes equipos" : "del siguiente equipo"} del Laboratorio de Tecnología de Alimentos de la Facultad de Ingeniería Química:`,
+    nota: "P/C: preventivo / correctivo. Docencia, vinculación e investigación: actividades en las que se usa el equipo.",
+    texto: equipos.map((r, i) => `${i + 1}. ${r.equipo} · Inv. ${r.num_inventario} · ${r.marca || "—"} ${r.modelo || ""}\n` +
+      `   ${PC[r.tipo] ?? r.tipo} — ${r.descripcion}\n` +
+      `   Uso: ${[r.docencia && "docencia", r.vinculacion && "vinculación", r.investigacion && "investigación"].filter(Boolean).join(", ") || "—"}`),
+  };
+}
+
+function armarCorreo(c: ReturnType<typeof contenido>, observaciones: string | null, firma: string, folio: string) {
+  const { enc, filas, intro, centradas } = c;
   const celda = "border:1px solid #9aa4b2;padding:6px 8px;font-size:13px;vertical-align:top";
-  const filas = renglones.map((r) => [
-    r.equipo, r.num_inventario, r.marca || "—", r.modelo || "—", r.descripcion, PC[r.tipo] ?? r.tipo,
-    r.docencia ? "X" : "", r.vinculacion ? "X" : "", r.investigacion ? "X" : "",
-  ]);
-  const intro = `Por medio del presente, solicito de la manera más atenta el mantenimiento ${plural ? "de los siguientes equipos" : "del siguiente equipo"} del Laboratorio de Tecnología de Alimentos de la Facultad de Ingeniería Química:`;
   const cierre = "Agradezco de antemano su atención y quedo atento para coordinar la visita.";
 
   const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:14px;line-height:1.5">
@@ -44,9 +72,9 @@ function armarCorreo(renglones: Renglon[], observaciones: string | null, firma: 
 <p>${esc(intro)}</p>
 <table style="border-collapse:collapse;margin:8px 0 14px">
 <thead><tr>${enc.map((h) => `<th style="${celda};background:#14284b;color:#fff;text-align:left">${h}</th>`).join("")}</tr></thead>
-<tbody>${filas.map((f) => `<tr>${f.map((v, i) => `<td style="${celda}${i >= 5 ? ";text-align:center" : ""}">${esc(v)}</td>`).join("")}</tr>`).join("")}</tbody>
+<tbody>${filas.map((f) => `<tr>${f.map((v, i) => `<td style="${celda}${i >= centradas ? ";text-align:center" : ""}">${esc(v)}</td>`).join("")}</tr>`).join("")}</tbody>
 </table>
-<p style="font-size:12px;color:#5b6472">P/C: preventivo / correctivo. Docencia, vinculación e investigación: actividades en las que se usa el equipo.</p>
+<p style="font-size:12px;color:#5b6472">${esc(c.nota)}</p>
 ${observaciones ? `<p><strong>Observaciones:</strong> ${esc(observaciones)}</p>` : ""}
 <p>${esc(cierre)}</p>
 <p>Atentamente,<br>${firma.split("\n").map(esc).join("<br>")}</p>
@@ -55,9 +83,7 @@ ${observaciones ? `<p><strong>Observaciones:</strong> ${esc(observaciones)}</p>`
 
   const texto = [
     "Buen día:", "", intro, "",
-    ...renglones.map((r, i) => `${i + 1}. ${r.equipo} · Inv. ${r.num_inventario} · ${r.marca || "—"} ${r.modelo || ""}\n` +
-      `   ${PC[r.tipo] ?? r.tipo} — ${r.descripcion}\n` +
-      `   Uso: ${[r.docencia && "docencia", r.vinculacion && "vinculación", r.investigacion && "investigación"].filter(Boolean).join(", ") || "—"}`),
+    ...c.texto,
     "", ...(observaciones ? [`Observaciones: ${observaciones}`, ""] : []),
     cierre, "", "Atentamente,", firma, "", `Folio ${folio}`,
   ].join("\n");
@@ -83,7 +109,7 @@ Deno.serve(async (req) => {
 
   // Se lee con la sesión de quien llama: solo el personal la ve (RLS)
   const { data: s } = await sesion.from("solicitudes_mantenimiento")
-    .select("id, folio, estado, para, cc, asunto, observaciones, creada_por, solicitud_mant_equipos(*)").eq("id", id).maybeSingle();
+    .select("id, folio, clase, estado, para, cc, asunto, observaciones, creada_por, solicitud_mant_equipos(*), solicitud_mant_servicios(*)").eq("id", id).maybeSingle();
   if (!s) return respuesta({ error: "No se encontró la solicitud o no tiene permiso." }, 404);
   if (s.estado !== "por_enviar") return respuesta({ error: "La solicitud ya fue enviada." }, 409);
 
@@ -96,8 +122,10 @@ Deno.serve(async (req) => {
   ]);
   const folio = `M-${String(s.folio).padStart(4, "0")}`;
   const firma = `${perfil?.nombre ?? ""}\nLaboratorio de Tecnología de Alimentos\nFacultad de Ingeniería Química, UADY`.trim();
-  const renglones = [...(s.solicitud_mant_equipos as (Renglon & { orden: number })[])].sort((a, b) => a.orden - b.orden);
-  const { html, texto } = armarCorreo(renglones, s.observaciones, firma, folio);
+  const porOrden = <T extends { orden: number }>(x: T[] | null) => [...(x ?? [])].sort((a, b) => a.orden - b.orden);
+  const c = contenido(s.clase, porOrden(s.solicitud_mant_equipos as (Renglon & { orden: number })[]),
+    porOrden(s.solicitud_mant_servicios as (RenglonServicio & { orden: number })[]));
+  const { html, texto } = armarCorreo(c, s.observaciones, firma, folio);
 
   const envio = await fetch("https://api.postmarkapp.com/email", {
     method: "POST",
@@ -106,7 +134,7 @@ Deno.serve(async (req) => {
       From: `"${conf!.nombre_remitente.replace(/"/g, "")}" <${conf!.correo_remitente}>`,
       To: s.para.join(", "), Cc: s.cc.length ? s.cc.join(", ") : undefined,
       ReplyTo: conf!.correo_remitente, Subject: s.asunto, HtmlBody: html, TextBody: texto,
-      MessageStream: "outbound", Tag: "solicitud-mantenimiento", TrackOpens: false,
+      MessageStream: "outbound", Tag: s.clase === "servicios" ? "solicitud-servicios" : "solicitud-mantenimiento", TrackOpens: false,
     }),
   });
   const r = await envio.json().catch(() => ({}));

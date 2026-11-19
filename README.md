@@ -163,7 +163,9 @@ La app redacta y envía el correo con Postmark (servidor de salida del mismo *Se
    `enviar-solicitud-mantenimiento`, pegar `supabase/functions/enviar-solicitud-mantenimiento/index.ts`
    y desplegar con **«Verify JWT» activado** (la llama el personal con su sesión).
 
-Destinatarios, copia y remitente se cambian en **Configuración**. Sin Postmark, la solicitud se guarda
+Hay dos clases: **equipos** (Mariana Martín) y **servicios e instalaciones** (Francisco Dzul), ambas con
+copia a Roger Bargas, Janice Chuc y Dalmira Rodríguez. Destinatarios, copia y remitente se cambian en
+**Configuración**. Sin Postmark, la solicitud se guarda
 igual y la app ofrece «Abrir en Outlook».
 
 ## Uso de préstamos e inventario

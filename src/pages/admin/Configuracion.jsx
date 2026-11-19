@@ -16,8 +16,11 @@ export default function Configuracion() {
     if ('mantenimiento_para' in resto) {
       resto.mantenimiento_para = lista(resto.mantenimiento_para_texto ?? resto.mantenimiento_para.join(','));
       resto.mantenimiento_cc = lista(resto.mantenimiento_cc_texto ?? resto.mantenimiento_cc.join(','));
-      delete resto.mantenimiento_para_texto; delete resto.mantenimiento_cc_texto;
-      const malo = [...resto.mantenimiento_para, ...resto.mantenimiento_cc].find((x) => !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
+      resto.servicios_para = lista(resto.servicios_para_texto ?? resto.servicios_para.join(','));
+      resto.servicios_cc = lista(resto.servicios_cc_texto ?? resto.servicios_cc.join(','));
+      for (const k of ['mantenimiento_para', 'mantenimiento_cc', 'servicios_para', 'servicios_cc']) delete resto[`${k}_texto`];
+      if (!resto.servicios_para.length) return setMensaje({ tipo: 'error', texto: 'Indique al menos un destinatario de las solicitudes de servicios.' });
+      const malo = [...resto.mantenimiento_para, ...resto.mantenimiento_cc, ...resto.servicios_para, ...resto.servicios_cc].find((x) => !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
       if (malo) return setMensaje({ tipo: 'error', texto: `Correo no válido: ${malo}` });
       if (!resto.mantenimiento_para.length) return setMensaje({ tipo: 'error', texto: 'Indique al menos un destinatario de las solicitudes de mantenimiento.' });
     }
@@ -54,11 +57,19 @@ export default function Configuracion() {
         {'mantenimiento_para' in c && (
           <fieldset className="persona-solicitud">
             <legend>Solicitudes de mantenimiento por correo</legend>
+            <p className="tenue nota"><strong>Equipos</strong></p>
             <label>Enviar a (separe con comas)
               <textarea rows={2} value={c.mantenimiento_para_texto ?? c.mantenimiento_para.join(', ')} onChange={(e) => campo('mantenimiento_para_texto', e.target.value)} />
             </label>
             <label>Con copia a
               <textarea rows={2} value={c.mantenimiento_cc_texto ?? c.mantenimiento_cc.join(', ')} onChange={(e) => campo('mantenimiento_cc_texto', e.target.value)} />
+            </label>
+            <p className="tenue nota"><strong>Servicios e instalaciones</strong></p>
+            <label>Enviar a (separe con comas)
+              <textarea rows={2} value={c.servicios_para_texto ?? c.servicios_para.join(', ')} onChange={(e) => campo('servicios_para_texto', e.target.value)} />
+            </label>
+            <label>Con copia a
+              <textarea rows={2} value={c.servicios_cc_texto ?? c.servicios_cc.join(', ')} onChange={(e) => campo('servicios_cc_texto', e.target.value)} />
             </label>
             <div className="fila-campos">
               <label>Correo remitente<input type="email" value={c.correo_remitente} onChange={(e) => campo('correo_remitente', e.target.value)} /></label>
