@@ -6,6 +6,7 @@ import { duracion, fecha, fechaHora } from '../../util';
 import {
   ESTADOS, EstadoEquipo, Mantenimiento, ModalEstado, ModalMantenimiento, TIPOS_MANT, useDiasAlerta,
 } from './comun';
+import { ModalSolicitudMant } from './SolicitudesMant';
 
 export default function Ficha() {
   const { id } = useParams();
@@ -50,6 +51,7 @@ export default function Ficha() {
         </div>
         <div className="fila-botones envolver">
           <button className="btn" onClick={() => setModal('estado')}>Cambiar estado</button>
+          {e.estado !== 'baja' && <button className="btn" onClick={() => setModal('solicitar')}>Solicitar mantenimiento</button>}
           {e.estado !== 'baja' && <button className="btn btn-primario" onClick={() => setModal('mant')}>Registrar mantenimiento</button>}
           <Link className="btn" to={`/equipos/editar/${e.id}`}>Editar</Link>
           <Link className="btn" to={`/equipos/etiquetas?ids=${e.id}`}>Etiqueta QR</Link>
@@ -150,6 +152,7 @@ export default function Ficha() {
         ))}
       </section>
 
+      {modal === 'solicitar' && <ModalSolicitudMant equipo={e} alCerrar={() => setModal(null)} />}
       {modal === 'mant' && <ModalMantenimiento equipo={e} alCerrar={() => setModal(null)} alGuardar={cerrar} />}
       {modal === 'estado' && <ModalEstado equipo={e} alCerrar={() => setModal(null)} alGuardar={cerrar} />}
       {modal?.terminar && <TerminarUso uso={modal.terminar} alCerrar={() => setModal(null)} alGuardar={cerrar} />}

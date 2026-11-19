@@ -71,6 +71,11 @@ Laboratorios de la FIQ y su Manual de Seguridad. Responsable: Dr. Luis Antonio C
   → `solicitudes_entrantes`; registrar con el folio la marca como registrada; descartar exige motivo.
   La app no responde la aprobación (Graph Approvals es beta y exige registro en Entra ID): guarda el
   enlace (`0013`, `enlace_aprobacion`) y muestra «Aprobar en Power Automate» tras registrar.
+- Solicitudes de mantenimiento (`0016`), dos clases: equipos con `crear_solicitud_mantenimiento` (renglones con
+  P/C y uso en docencia/vinculación/investigación; Mariana Martín) y servicios e instalaciones con
+  `crear_solicitud_servicios` (área, tipo de servicio, P/C, urgente; Francisco Dzul; `atender_servicio`) → Edge Function `enviar-solicitud-mantenimiento` (Postmark, secreto
+  `POSTMARK_TOKEN`; destinatarios en `configuracion`) → seguimiento con `seguimiento_solicitud_mantenimiento`.
+  Registrar el mantenimiento de un equipo solicitado lo liga y cierra la solicitud cuando todos están atendidos.
 - Carga inicial: plantillas Excel en `public/plantillas/` (generadas con openpyxl; sin celdas de texto
   vacío, que `read-excel-file` no acepta). Importación atómica con `importar_articulos` e
   `importar_equipos` (solo Administrador).

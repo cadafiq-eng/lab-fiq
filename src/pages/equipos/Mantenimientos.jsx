@@ -6,6 +6,7 @@ import { descargarCSV, fecha, hoyISO } from '../../util';
 import {
   EstadoEquipo, Mantenimiento, ModalMantenimiento, PestanasEquipos, TIPOS_MANT, situacionMantenimiento, useDiasAlerta,
 } from './comun';
+import { ModalSolicitudMant, ModalSolicitudServicios } from './SolicitudesMant';
 
 export default function Mantenimientos() {
   const diasAlerta = useDiasAlerta();
@@ -14,6 +15,7 @@ export default function Mantenimientos() {
   const [verTodos, setVerTodos] = useState(false);
   const [desde, setDesde] = useState(hoyISO(-365));
   const [modal, setModal] = useState(null);
+  const [solicitar, setSolicitar] = useState(false);
   const [mensaje, setMensaje] = useState(null);
 
   async function cargar() {
@@ -44,7 +46,13 @@ export default function Mantenimientos() {
 
   return (
     <>
-      <h1>Equipos</h1>
+      <div className="encabezado">
+        <h1>Equipos</h1>
+        <div className="fila-botones">
+          <button className="btn btn-primario" onClick={() => setSolicitar('equipos')}>Solicitar mantenimiento de equipo</button>
+          <button className="btn" onClick={() => setSolicitar('servicios')}>Solicitar mantenimiento de servicios</button>
+        </div>
+      </div>
       <PestanasEquipos />
       <Aviso mensaje={mensaje} />
       <section className="tarjeta una-columna">
@@ -98,6 +106,8 @@ export default function Mantenimientos() {
         {registros?.length > 0 && <p className="tenue nota">{registros.length} mantenimiento(s) · costo total {pesos(total)}</p>}
       </section>
 
+      {solicitar === 'equipos' && <ModalSolicitudMant alCerrar={() => setSolicitar(false)} />}
+      {solicitar === 'servicios' && <ModalSolicitudServicios alCerrar={() => setSolicitar(false)} />}
       {modal && <ModalMantenimiento equipo={modal} alCerrar={() => setModal(null)}
         alGuardar={(t) => { setModal(null); setMensaje({ tipo: 'ok', texto: t }); cargar(); }} />}
     </>

@@ -30,7 +30,8 @@ src/                   Aplicación web
    `0012_acceso_varias_personas.sql` (solicitudes de acceso con varias personas),
    `0013_enlace_aprobacion.sql` (enlace a la aprobación; antes de redesplegar `recibir-solicitud`),
    `0014_preparacion_reservaciones.sql` (preparación de material),
-   `0015_asistencia_reservaciones.sql` (asistencia de las prácticas).
+   `0015_asistencia_reservaciones.sql` (asistencia de las prácticas),
+   `0016_solicitudes_mantenimiento.sql` (solicitudes de mantenimiento por correo).
    Cada archivo se ejecuta una sola vez y en orden.
 3. Authentication → Users → **Add user**: correo y contraseña del Administrador,
    con «Auto Confirm User».
@@ -147,6 +148,25 @@ Aprobación (Laboratorios FIQ) → correo del laboratorio → flujo del laborato
 Las solicitudes llegan a **Solicitudes FIQ → Pendientes** (contador en el menú y aviso en Inicio).
 Al registrar la reservación o la autorización con su folio salen solas; las demás se descartan con
 motivo. Los datos pasan por Postmark: considerarlo en el aviso de privacidad (fase 7).
+
+## Solicitudes de mantenimiento por correo
+
+La app redacta y envía el correo con Postmark (servidor de salida del mismo *Server*):
+
+1. **Supabase → SQL Editor:** ejecutar `0016_solicitudes_mantenimiento.sql`.
+2. **Postmark → Sender Signatures → Add Sender Signature:** el correo remitente de Configuración
+   (por omisión `lab.tecnologiadealimentos@correo.uady.mx`). Postmark manda un correo de
+   confirmación a ese buzón: abrirlo y pulsar *Confirm Sender Signature*.
+3. **Postmark → Server → API Tokens:** copiar el *Server API token*.
+4. **Supabase → Edge Functions → Secrets:** crear `POSTMARK_TOKEN` con ese valor (no va al repositorio).
+5. **Supabase → Edge Functions → Deploy a new function → Via Editor:** nombre
+   `enviar-solicitud-mantenimiento`, pegar `supabase/functions/enviar-solicitud-mantenimiento/index.ts`
+   y desplegar con **«Verify JWT» activado** (la llama el personal con su sesión).
+
+Hay dos clases: **equipos** (Mariana Martín) y **servicios e instalaciones** (Francisco Dzul), ambas con
+copia a Roger Bargas, Janice Chuc y Dalmira Rodríguez. Destinatarios, copia y remitente se cambian en
+**Configuración**. Sin Postmark, la solicitud se guarda
+igual y la app ofrece «Abrir en Outlook».
 
 ## Uso de préstamos e inventario
 

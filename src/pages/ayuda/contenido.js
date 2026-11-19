@@ -255,6 +255,19 @@ export const CAPITULOS = [
         ],
       },
       {
+        titulo: 'Solicitar mantenimiento',
+        bloques: [
+          { pasos: [
+            'En la ficha del equipo (o en Equipos → Mantenimientos o → Solicitudes de mantenimiento), pulse «Solicitar mantenimiento».',
+            'Elija el equipo (marca y modelo se llenan solos), describa la falla o el trabajo que requiere, marque P (preventivo) o C (correctivo) y si el equipo se usa en docencia, vinculación o investigación. Con «+ Agregar otro equipo» se piden varios en la misma solicitud.',
+            'Pulse «Enviar solicitud»: la app guarda la solicitud con folio (M-0001…) y envía el correo a los responsables de mantenimiento, con copia a las personas indicadas en Configuración.',
+          ] },
+          { p: 'En Equipos → Solicitudes de mantenimiento se da seguimiento: notas y cambios de estado (enviada, en proceso, atendida, cancelada). Al registrar el mantenimiento de un equipo solicitado, su renglón se marca como atendido; cuando todos lo están, la solicitud se cierra sola.' },
+          { p: 'Para las instalaciones (electricidad, agua y drenaje, aire acondicionado, cuartos fríos, gas, vapor, obra civil) use «Solicitar mantenimiento de servicios» en Equipos → Mantenimientos o → Solicitudes de mantenimiento: indique el área, el tipo de servicio, la descripción, P/C y si es urgente. Este correo va al responsable de servicios. Cuando se resuelva cada servicio, márquelo como atendido con una nota.' },
+          { nota: 'Si el correo no se pudo enviar, la solicitud queda «Por enviar» con el motivo: puede reintentar con «Enviar correo» o usar «Abrir en Outlook» y después registrarla como «Enviada».' },
+        ],
+      },
+      {
         titulo: 'Capacitaciones (Art. 13)',
         para: 'admin',
         bloques: [
