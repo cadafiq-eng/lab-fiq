@@ -436,3 +436,10 @@ details.tarjeta summary { cursor: pointer; font-weight: 600; color: var(--azul);
   box-shadow: 0 8px 24px rgba(15, 23, 42, .18); padding: 12px 14px; display: grid; gap: 6px; }
 .aviso-flotante p { margin: 0; }
 @media print { .avisos-flotantes { display: none; } }
+
+/* Solicitudes de mantenimiento */
+.casillas-uso { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; padding-top: 18px; }
+.casillas-uso > span { width: 100%; }
+td.centro { text-align: center; }
+.seguimiento { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 10px; }
+.seguimiento li { display: grid; gap: 2px; border-left: 3px solid var(--oro); padding-left: 10px; }

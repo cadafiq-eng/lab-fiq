@@ -46,6 +46,7 @@ export function PestanasEquipos() {
     <nav className="pestanas">
       <NavLink to="/equipos/catalogo">Catálogo</NavLink>
       <NavLink to="/equipos/mantenimientos">Mantenimientos</NavLink>
+      <NavLink to="/equipos/solicitudes">Solicitudes de mantenimiento</NavLink>
       <NavLink to="/equipos/capacitaciones">Capacitaciones</NavLink>
       <NavLink to="/equipos/uso">Bitácora de uso</NavLink>
     </nav>

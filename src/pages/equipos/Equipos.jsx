@@ -6,12 +6,15 @@ import Mantenimientos from './Mantenimientos';
 import Capacitaciones from './Capacitaciones';
 import BitacoraUso from './BitacoraUso';
 import Etiquetas from './Etiquetas';
+import { DetalleSolicitudMant, ListaSolicitudesMant } from './SolicitudesMant';
 
 export default function Equipos() {
   return (
     <Routes>
       <Route path="catalogo" element={<Catalogo />} />
       <Route path="mantenimientos" element={<Mantenimientos />} />
+      <Route path="solicitudes" element={<ListaSolicitudesMant />} />
+      <Route path="solicitudes/:id" element={<DetalleSolicitudMant />} />
       <Route path="capacitaciones" element={<Capacitaciones />} />
       <Route path="uso" element={<BitacoraUso />} />
       <Route path="nuevo" element={<FormEquipo />} />
