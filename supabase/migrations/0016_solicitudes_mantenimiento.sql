@@ -15,7 +15,7 @@
 
 alter table configuracion
   add column if not exists mantenimiento_para text[] not null default
-    '{mariana.martin@correo.uady.mx,franciscoj.dzul@correo.uady.mx}',
+    '{mariana.martin@correo.uady.mx}',   -- mantenimiento de equipos (servicios: Francisco Dzul)
   add column if not exists mantenimiento_cc text[] not null default
     '{roger.bargas@correo.uady.mx,janice.chuc@correo.uady.mx,dalmira.rodriguez@correo.uady.mx}',
   add column if not exists correo_remitente text not null default 'lab.tecnologiadealimentos@correo.uady.mx',
