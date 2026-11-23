@@ -47,10 +47,13 @@ export default function Preparacion() {
   // Solicitudes de práctica que llegaron pero aún no se registran como reservación
   useEffect(() => {
     const fin = new Date(desde + 'T00:00'); fin.setDate(fin.getDate() + Number(dias));
-    supabase.from('solicitudes_entrantes').select('id, texto, folio, recibida_en').eq('estado', 'pendiente').eq('tipo', 'practica')
+    supabase.from('solicitudes_entrantes').select('id, texto, folio, recibida_en').eq('estado', 'pendiente').in('tipo', ['practica', 'acceso'])
       .order('recibida_en').limit(200)
-      .then(({ data }) => setPorRegistrar((data ?? []).map((s) => ({ ...s, d: leerSolicitud(s.texto) })).filter(({ d }) =>
-        d && (!d.fecha || (d.fecha >= desde && d.fecha < diaLocal(fin))))));
+      .then(({ data }) => setPorRegistrar((data ?? []).map((s) => ({ ...s, d: leerSolicitud(s.texto) })).filter(({ d }) => {
+        if (!d) return false;
+        if (d.tipo === 'acceso') return (d.materiales || d.reactivos || d.equipos_texto) && (!d.inicio || ((d.fin || d.inicio) >= desde && d.inicio < diaLocal(fin)));
+        return !d.fecha || (d.fecha >= desde && d.fecha < diaLocal(fin));
+      })));
   }, [desde, dias]);
 
   async function marcar(r, preparada) {
@@ -107,12 +110,14 @@ export default function Preparacion() {
             {porRegistrar.map(({ id, folio, d }) => (
               <article key={id} className="tarjeta prep-tarjeta prep-pendiente">
                 <header>
-                  <div><strong className="prep-hora">{d.fecha ? diaTexto(new Date(d.fecha + 'T12:00')) : 'Sin fecha'} · {d.hora_inicio || '?'}–{d.hora_fin || '?'}</strong>
+                  <div><strong className="prep-hora">{d.tipo === 'acceso'
+                    ? (d.inicio ? `${diaTexto(new Date(d.inicio + 'T12:00'))}${d.fin && d.fin !== d.inicio ? ` al ${diaTexto(new Date(d.fin + 'T12:00'))}` : ''}` : 'Sin fecha')
+                    : `${d.fecha ? diaTexto(new Date(d.fecha + 'T12:00')) : 'Sin fecha'} · ${d.hora_inicio || '?'}–${d.hora_fin || '?'}`}</strong>
                     {folio && <span className="tenue chico"> · FIQ {folio}</span>}</div>
                   <Etiqueta tono="aviso">Sin registrar</Etiqueta>
                 </header>
-                <h3>{d.titulo || 'Práctica sin nombre'}</h3>
-                <p className="tenue">{d.responsable}{d.asignatura ? ` · ${d.asignatura}` : ''}{d.num_alumnos ? ` · ${d.num_alumnos} personas` : ''}</p>
+                <h3>{d.titulo || d.actividad || 'Sin nombre'}{d.tipo === 'acceso' && <span className="tenue chico"> · acceso</span>}</h3>
+                <p className="tenue">{d.tipo === 'acceso' ? d.personas?.map((x) => x.nombre).join(' y ') : d.responsable}{d.asignatura ? ` · ${d.asignatura}` : ''}{d.num_alumnos ? ` · ${d.num_alumnos} personas` : ''}</p>
                 {d.materiales && <><h4>Materiales</h4><p className="prep-texto">{d.materiales}</p></>}
                 {d.reactivos && <><h4>Reactivos</h4><p className="prep-texto">{d.reactivos}</p></>}
                 {d.equipos_texto && <><h4>Equipos solicitados</h4><p className="prep-texto">{d.equipos_texto}</p></>}

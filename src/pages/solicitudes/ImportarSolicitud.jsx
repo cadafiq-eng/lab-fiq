@@ -105,7 +105,7 @@ function Bandeja({ estado, alAbrir }) {
             const d = leida(s);
             const [t, color] = TIPOS_SOL[s.tipo] ?? TIPOS_SOL.desconocido;
             return (
-              <tr key={s.id} className="fila-enlace" onClick={() => estado === 'pendiente' && alAbrir(s)}>
+              <tr key={s.id} className="fila-enlace" onClick={() => alAbrir(s)}>
                 <td className="sin-salto">{fechaHora(s.recibida_en)}</td>
                 <td><span className={'etiqueta ' + color}>{t}</span></td>
                 <td>{s.folio ?? '—'}</td>
@@ -113,7 +113,7 @@ function Bandeja({ estado, alAbrir }) {
                   : d?.tipo === 'acceso' ? <><strong>{d.personas?.map((x) => x.nombre).join(' y ') || d.nombre}</strong><br /><span className="tenue">{d.titulo || d.actividad} · {fecha(d.inicio)} al {fecha(d.fin)}</span></>
                   : <span className="tenue">{s.asunto}</span>}</td>
                 <td>{estado === 'pendiente' ? <button className="btn btn-chico">Revisar</button>
-                  : s.estado === 'registrada' ? <Etiqueta tono="bien">Registrada</Etiqueta>
+                  : s.estado === 'registrada' ? <><Etiqueta tono="bien">Registrada</Etiqueta><br /><span className="tenue chico">Abrir</span></>
                   : <><Etiqueta tono="gris">Descartada</Etiqueta><br /><span className="tenue chico">{s.motivo_descarte}</span></>}</td>
               </tr>
             );
@@ -156,12 +156,17 @@ function Revisar({ sol, alTerminar }) {
         </div>
         <div className="fila-botones">
           <BotonAprobar enlace={sol.enlace_aprobacion} texto={sol.enlace_aprobacion ? 'Ver en Power Automate ↗' : undefined} />
-          <button className="btn" onClick={alTerminar}>Volver a pendientes</button>
-          <button className="btn" onClick={() => setDescartar(!descartar)}>Descartar</button>
+          <button className="btn" onClick={alTerminar}>Volver</button>
+          {sol.estado === 'pendiente' && <button className="btn" onClick={() => setDescartar(!descartar)}>Descartar</button>}
         </div>
       </div>
-      <p className="tenue nota">Al registrar la reservación o la autorización con su folio, la solicitud sale sola de pendientes.
-        Si la rechazó en Power Automate o no corresponde, descártela con el motivo.</p>
+      {sol.estado === 'pendiente' ? (
+        <p className="tenue nota">Al registrar la reservación o la autorización con su folio, la solicitud sale sola de pendientes.
+          Si la rechazó en Power Automate o no corresponde, descártela con el motivo.</p>
+      ) : (
+        <p className="tenue nota">Esta solicitud ya fue {sol.estado === 'registrada' ? 'registrada' : `descartada (${sol.motivo_descarte})`}.
+          {sol.tipo === 'acceso' && sol.estado === 'registrada' && ' Si no la apartó en el calendario, puede hacerlo abajo en «Apartar en el calendario».'}</p>
+      )}
       {descartar && (
         <form className="formulario fila-agregar" onSubmit={confirmar}>
           <label className="crece">Motivo<input value={motivo} onChange={(e) => setMotivo(e.target.value)} required
@@ -400,8 +405,126 @@ function Acceso({ d, enlace }) {
           <dt>Reactivos</dt><dd>{d.reactivos || '—'}</dd>
           <dt>Residuos</dt><dd>{d.residuos.length ? d.residuos.map((g) => RESIDUOS[g]).join('; ') : 'Ninguno'}</dd>
         </dl>
-        <p className="tenue nota">Para apartar días u horarios concretos, registre además una reservación de investigación.</p>
       </section>
+      <ApartarCalendario d={d} nombres={f.personas.map((x) => x.nombre).filter(Boolean).join(' y ')} enlace={enlace} />
     </div>
+  );
+}
+
+// Tipo de actividad de la reservación a partir del «Tipo de actividad» de la solicitud
+function actividadDe(tipo) {
+  const t = String(tipo ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (/proyecto/.test(t)) return 'proyecto';
+  if (/servicio|vincula/.test(t)) return 'vinculacion';
+  if (/curso|taller/.test(t)) return 'taller_curso';
+  return 'investigacion';
+}
+
+// Apartar en el calendario el periodo de una solicitud de acceso (con sus
+// materiales, reactivos y equipos), para que aparezca en Preparación de material
+function ApartarCalendario({ d, nombres, enlace }) {
+  const [equipos, setEquipos] = useState([]);
+  const [elegidos, setElegidos] = useState({});
+  const [previa, setPrevia] = useState(undefined);
+  const [f, setF] = useState(null);
+  const [mensaje, setMensaje] = useState(null);
+  const [ocupado, setOcupado] = useState(false);
+
+  useEffect(() => {
+    supabase.from('equipos').select('id, codigo, nombre, estado, tipos_equipo(nombre)').neq('estado', 'baja').order('nombre')
+      .then(({ data }) => setEquipos((data ?? []).map((e) => ({ ...e, tipo: e.tipos_equipo?.nombre }))));
+    supabase.from('configuracion').select('hora_apertura, hora_cierre').eq('id', 1).single().then(({ data }) =>
+      setF({ ini: (data?.hora_apertura ?? '08:00').slice(0, 5), fin: (data?.hora_cierre ?? '20:00').slice(0, 5), dias: 'habil',
+        actividad: actividadDe(d.tipo_actividad), titulo: d.titulo || d.actividad || 'Trabajo en el laboratorio' }));
+  }, []);
+  useEffect(() => {
+    if (!d.folio) return setPrevia(null);
+    supabase.from('reservaciones').select('id, inicio').eq('folio_solicitud', d.folio).eq('estado', 'programada').order('inicio').limit(1)
+      .then(({ data }) => setPrevia(data?.[0] ?? null));
+  }, [d.folio]);
+  const piezas = piezasEquipo(d.equipos_texto).map((p) => ({ pieza: p, opciones: sugerirEquipos(p, equipos) }));
+  useEffect(() => {
+    const ini = {};
+    piezas.forEach(({ pieza, opciones }) => { if (opciones.length === 1) ini[pieza] = opciones[0].id; });
+    setElegidos(ini);
+  }, [equipos.length, d.equipos_texto]);
+
+  if (!f || previa === undefined || !d.inicio) return null;
+  const campo = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const varios = d.fin && d.fin > d.inicio;
+
+  async function apartar() {
+    setOcupado(true); setMensaje(null);
+    const sinReservar = piezas.filter(({ pieza }) => !elegidos[pieza]).map(({ pieza }) => pieza);
+    const p = {
+      actividad: f.actividad, ocupa_todo: false, titulo: f.titulo, responsable: nombres || d.nombre,
+      responsable_correo: d.correo || null, procedencia: d.institucion && !/uady/i.test(d.institucion) ? 'externo' : 'interno',
+      institucion: d.institucion || null, materiales: d.materiales || null, reactivos: d.reactivos || null,
+      contacto_emergencia: d.contacto || null, folio_solicitud: d.folio, residuos: d.residuos,
+      equipos: [...new Set(Object.values(elegidos).filter(Boolean))],
+      observaciones: [`Acceso autorizado (solicitud FIQ ${d.folio ?? ''})`, sinReservar.length ? `Equipo solicitado sin reservar: ${sinReservar.join(', ')}` : '',
+        d.proyecto_sistproy ? `Proyecto: ${d.proyecto_sistproy}` : ''].filter(Boolean).join('\n'),
+      inicio: new Date(`${d.inicio}T${f.ini}`).toISOString(), fin: new Date(`${d.inicio}T${f.fin}`).toISOString(),
+    };
+    const { data: n, error } = await supabase.rpc('registrar_reservacion', { p, p_hasta: varios ? d.fin : null, p_frecuencia: f.dias });
+    setOcupado(false);
+    if (error) return setMensaje({ tipo: 'error', texto: mensajeError(error) });
+    setMensaje({ tipo: 'ok', texto: `Quedó apartado en el calendario (${n} día${n === 1 ? '' : 's'}). Sus materiales ya aparecen en «Preparación de material».` });
+    setPrevia({ id: null, inicio: p.inicio });
+  }
+
+  return (
+    <section className="tarjeta formulario">
+      <h2>Apartar en el calendario</h2>
+      {previa && !mensaje ? (
+        <p className="aviso aviso-ok nota">Esta solicitud ya está apartada en el calendario.{' '}
+          {previa.id && <Link to={`/reservaciones/detalle/${previa.id}`}>Ver reservación</Link>}</p>
+      ) : mensaje?.tipo === 'ok' ? (
+        <div className="siguiente-paso">
+          <p>{mensaje.texto}</p>
+          <div className="fila-botones">
+            <Link className="btn" to={`/reservaciones/calendario?vista=semana&semana=${d.inicio}`}>Ver calendario</Link>
+            <Link className="btn" to="/reservaciones/preparacion">Preparación de material</Link>
+            <BotonAprobar enlace={enlace} />
+          </div>
+        </div>
+      ) : (
+        <>
+          <p className="tenue nota">La solicitud de acceso no trae horario. Indique en qué horario usarán el laboratorio
+            {varios ? ` del ${fecha(d.inicio)} al ${fecha(d.fin)}` : ` el ${fecha(d.inicio)}`}; se apartan esos días con los materiales, reactivos y equipos que piden.</p>
+          <Aviso mensaje={mensaje} />
+          <label>Título<input value={f.titulo} onChange={campo('titulo')} /></label>
+          <div className="fila-campos">
+            <label>Actividad
+              <select value={f.actividad} onChange={campo('actividad')}>
+                <option value="investigacion">Investigación</option><option value="proyecto">Proyecto</option>
+                <option value="vinculacion">Vinculación o servicio</option><option value="taller_curso">Taller o curso</option><option value="otro">Otra</option>
+              </select>
+            </label>
+            {varios && (
+              <label>Días
+                <select value={f.dias} onChange={campo('dias')}>
+                  <option value="habil">Lunes a viernes</option><option value="diaria">Todos (incluye fin de semana)</option>
+                </select>
+              </label>
+            )}
+          </div>
+          <div className="fila-campos">
+            <label>De<input type="time" step="900" value={f.ini} onChange={campo('ini')} /></label>
+            <label>A<input type="time" step="900" value={f.fin} onChange={campo('fin')} /></label>
+          </div>
+          {piezas.map(({ pieza, opciones }) => (
+            <label key={pieza}>Equipo: {pieza}
+              <select value={elegidos[pieza] ?? ''} onChange={(e) => setElegidos({ ...elegidos, [pieza]: e.target.value })}>
+                <option value="">No reservar equipo</option>
+                {(opciones.length ? opciones : equipos).map((e) => <option key={e.id} value={e.id}>{e.codigo} · {e.nombre}</option>)}
+              </select>
+            </label>
+          ))}
+          <button type="button" className="btn btn-primario" onClick={apartar} disabled={ocupado || !d.folio}>{ocupado ? 'Apartando…' : 'Apartar en el calendario'}</button>
+          <p className="tenue chico">No ocupa todo el laboratorio: otras actividades pueden coincidir, salvo con los equipos reservados.</p>
+        </>
+      )}
+    </section>
   );
 }
