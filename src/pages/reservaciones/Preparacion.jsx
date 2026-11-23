@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { leerSolicitud } from '../solicitudes/lector';
 import { supabase, mensajeError } from '../../supabase';
 import { Aviso, Etiqueta } from '../../componentes';
 import { diaLocal, hoyISO } from '../../util';
@@ -17,6 +18,8 @@ export default function Preparacion() {
   const [equipos, setEquipos] = useState({});
   const [personal, setPersonal] = useState({});
   const [mensaje, setMensaje] = useState(null);
+  const [porRegistrar, setPorRegistrar] = useState([]);
+  const navegar = useNavigate();
 
   useEffect(() => {
     supabase.from('equipos').select('id, codigo, nombre').then(({ data }) =>
@@ -40,6 +43,15 @@ export default function Preparacion() {
       });
   }
   useEffect(cargar, [desde, dias]);
+
+  // Solicitudes de práctica que llegaron pero aún no se registran como reservación
+  useEffect(() => {
+    const fin = new Date(desde + 'T00:00'); fin.setDate(fin.getDate() + Number(dias));
+    supabase.from('solicitudes_entrantes').select('id, texto, folio, recibida_en').eq('estado', 'pendiente').eq('tipo', 'practica')
+      .order('recibida_en').limit(200)
+      .then(({ data }) => setPorRegistrar((data ?? []).map((s) => ({ ...s, d: leerSolicitud(s.texto) })).filter(({ d }) =>
+        d && (!d.fecha || (d.fecha >= desde && d.fecha < diaLocal(fin))))));
+  }, [desde, dias]);
 
   async function marcar(r, preparada) {
     if (!preparada && !confirm(`¿Quitar la marca de preparado a «${r.titulo}»?`)) return;
@@ -86,6 +98,32 @@ export default function Preparacion() {
         </div>
         {lista && <p className="tenue nota">{listas} de {lista.length} reservación(es) preparadas.</p>}
       </section>
+
+      {porRegistrar.length > 0 && (
+        <section className="prep-dia">
+          <h2 style={{ textTransform: "none" }}>Solicitudes FIQ aún sin registrar ({porRegistrar.length})</h2>
+          <p className="tenue nota">Llegaron pero todavía no están en el calendario. Regístrelas para apartar el horario; mientras, aquí ve lo que piden.</p>
+          <div className="prep-tarjetas">
+            {porRegistrar.map(({ id, folio, d }) => (
+              <article key={id} className="tarjeta prep-tarjeta prep-pendiente">
+                <header>
+                  <div><strong className="prep-hora">{d.fecha ? diaTexto(new Date(d.fecha + 'T12:00')) : 'Sin fecha'} · {d.hora_inicio || '?'}–{d.hora_fin || '?'}</strong>
+                    {folio && <span className="tenue chico"> · FIQ {folio}</span>}</div>
+                  <Etiqueta tono="aviso">Sin registrar</Etiqueta>
+                </header>
+                <h3>{d.titulo || 'Práctica sin nombre'}</h3>
+                <p className="tenue">{d.responsable}{d.asignatura ? ` · ${d.asignatura}` : ''}{d.num_alumnos ? ` · ${d.num_alumnos} personas` : ''}</p>
+                {d.materiales && <><h4>Materiales</h4><p className="prep-texto">{d.materiales}</p></>}
+                {d.reactivos && <><h4>Reactivos</h4><p className="prep-texto">{d.reactivos}</p></>}
+                {d.equipos_texto && <><h4>Equipos solicitados</h4><p className="prep-texto">{d.equipos_texto}</p></>}
+                <footer>
+                  <button className="btn btn-primario btn-chico" onClick={() => navegar('/solicitudes', { state: { abrir: id } })}>Registrar en el calendario</button>
+                </footer>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       {!lista ? <p className="tenue">Cargando…</p> : porDia.length === 0 ? (
         <section className="tarjeta"><p className="tenue">{lista.length ? 'Todo está preparado en este periodo.' : 'No hay reservaciones en este periodo.'}</p></section>
