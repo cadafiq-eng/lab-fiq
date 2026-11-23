@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase, mensajeError } from '../../supabase';
 import { useSesion } from '../../auth';
 import { Aviso, Etiqueta } from '../../componentes';
@@ -21,6 +21,13 @@ export default function ImportarSolicitud() {
   const enlace = (vista === 'revisar' ? abierta?.enlace_aprobacion : null) || enlaceEnTexto(texto);
 
   function abrir(sol) { setAbierta(sol); setTexto(sol.texto); setVista('revisar'); window.scrollTo(0, 0); }
+
+  // Desde «Preparación de material» se puede abrir directo una solicitud pendiente
+  const { state } = useLocation();
+  useEffect(() => {
+    if (!state?.abrir) return;
+    supabase.from('solicitudes_entrantes').select('*').eq('id', state.abrir).maybeSingle().then(({ data }) => data && abrir(data));
+  }, [state?.abrir]);
 
   return (
     <>
@@ -175,6 +182,9 @@ function Practica({ d, enlace }) {
   const [equipos, setEquipos] = useState([]);
   const [elegidos, setElegidos] = useState({});
   const [previa, setPrevia] = useState(null);
+  const [mensaje, setMensaje] = useState(null);
+  const [ocupado, setOcupado] = useState(false);
+  const [hecha, setHecha] = useState(null);   // reservación recién registrada
 
   useEffect(() => {
     supabase.from('equipos').select('id, codigo, nombre, estado, tipos_equipo(nombre)').neq('estado', 'baja').order('nombre')
@@ -194,18 +204,42 @@ function Practica({ d, enlace }) {
     setElegidos(ini);
   }, [equipos.length, d.equipos_texto]);
 
-  function continuar() {
+  // Datos de la reservación tal como vienen de la solicitud
+  function datosReservacion() {
     const sinReservar = piezas.filter(({ pieza }) => !elegidos[pieza]).map(({ pieza }) => pieza);
+    return {
+      actividad: d.asignatura ? 'clase' : 'taller_curso', titulo: d.titulo, asignatura: d.asignatura,
+      responsable: d.responsable, responsable_correo: d.responsable_correo, usuarios: d.num_alumnos ? `${d.num_alumnos} estudiantes` : '',
+      procedencia: d.procedencia, institucion: d.procedencia === 'externo' ? `Externos (solicitud FIQ ${d.folio ?? ''})`.trim() : '',
+      programa_educativo: d.programa_educativo, num_alumnos: d.num_alumnos ?? '',
+      num_equipos_trabajo: d.num_equipos_trabajo ?? '', materiales: d.materiales, reactivos: d.reactivos,
+      observaciones: [sinReservar.length ? `Equipo solicitado sin reservar: ${sinReservar.join(', ')}` : '', d.observaciones].filter(Boolean).join('\n'),
+      folio_solicitud: d.folio, alumnos_pe: d.alumnos_pe,
+    };
+  }
+
+  // Registro directo, sin pasar por el formulario
+  async function registrar() {
+    setOcupado(true); setMensaje(null);
+    const x = datosReservacion();
+    const vacio = (v) => (v === '' ? null : v);
+    const p = {
+      ...Object.fromEntries(Object.entries(x).map(([k, v]) => [k, vacio(v)])),
+      ocupa_todo: x.actividad === 'clase' || x.actividad === 'taller_curso',
+      inicio: new Date(`${d.fecha}T${d.hora_inicio}`).toISOString(), fin: new Date(`${d.fecha}T${d.hora_fin}`).toISOString(),
+      equipos: [...new Set(Object.values(elegidos).filter(Boolean))], residuos: d.residuos,
+    };
+    const { error } = await supabase.rpc('registrar_reservacion', { p, p_hasta: null, p_frecuencia: 'semanal' });
+    if (error) { setOcupado(false); return setMensaje({ tipo: 'error', texto: `${mensajeError(error)} Puede corregirlo con «Revisar en el formulario».` }); }
+    const { data } = await supabase.from('reservaciones').select('id').eq('folio_solicitud', d.folio).eq('estado', 'programada').limit(1);
+    setOcupado(false);
+    setHecha(data?.[0] ?? { id: null });
+  }
+
+  function continuar() {
     navegar('/reservaciones/nueva', {
       state: {
-        inicial: {
-          actividad: d.asignatura ? 'clase' : 'taller_curso', titulo: d.titulo, asignatura: d.asignatura,
-          responsable: d.responsable, responsable_correo: d.responsable_correo, usuarios: d.num_alumnos ? `${d.num_alumnos} estudiantes` : '',
-          procedencia: d.procedencia, programa_educativo: d.programa_educativo, num_alumnos: d.num_alumnos ?? '',
-          num_equipos_trabajo: d.num_equipos_trabajo ?? '', materiales: d.materiales, reactivos: d.reactivos,
-          observaciones: [sinReservar.length ? `Equipo solicitado sin reservar: ${sinReservar.join(', ')}` : '', d.observaciones].filter(Boolean).join('\n'),
-          folio_solicitud: d.folio, alumnos_pe: d.alumnos_pe,
-        },
+        inicial: datosReservacion(),
         enlace_aprobacion: enlace,
         dia: d.fecha, horaIni: d.hora_inicio, horaFin: d.hora_fin,
         equipos: [...new Set(Object.values(elegidos).filter(Boolean))], residuos: d.residuos,
@@ -241,8 +275,29 @@ function Practica({ d, enlace }) {
             {opciones.length === 0 && <span className="tenue chico">Sin coincidencias en el catálogo: puede elegir de la lista completa.</span>}
           </label>
         ))}
-        <button className="btn btn-primario" onClick={continuar} disabled={Boolean(previa)}>Continuar a la reservación</button>
-        <p className="tenue nota">Se abrirá el formulario de reservación con todo lleno: revise cruces y guarde. Después podrá aprobar la solicitud en Power Automate.</p>
+        <Aviso mensaje={mensaje} />
+        {hecha ? (
+          <div className="siguiente-paso">
+            <p><strong>Reservación registrada</strong> el {fecha(d.fecha)} de {d.hora_inicio} a {d.hora_fin}: ya aparece en el calendario y sus materiales en «Preparación de material».</p>
+            <p><strong>Último paso:</strong> apruebe la solicitud en Power Automate.</p>
+            <div className="fila-botones">
+              <BotonAprobar enlace={enlace} principal />
+              {hecha.id && <Link className="btn" to={`/reservaciones/detalle/${hecha.id}`}>Ver reservación</Link>}
+              <Link className="btn" to={`/reservaciones/calendario?vista=semana&semana=${d.fecha}`}>Ver calendario</Link>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="fila-botones">
+              <button className="btn btn-primario" onClick={registrar} disabled={Boolean(previa) || faltan.length > 0 || !d.folio || ocupado}>
+                {ocupado ? 'Registrando…' : 'Registrar reservación'}</button>
+              <button className="btn" onClick={continuar} disabled={Boolean(previa)}>Revisar en el formulario</button>
+            </div>
+            <p className="tenue nota">«Registrar reservación» aparta en el calendario la fecha y el horario pedidos con todo lo de la solicitud (materiales, reactivos, equipos).
+              Use «Revisar en el formulario» si quiere cambiar algo antes (otro horario, varios días, etc.).
+              {(faltan.length > 0 || !d.folio) && ' Esta solicitud no trae todos los datos: complétela en el formulario.'}</p>
+          </>
+        )}
       </section>
     </div>
   );

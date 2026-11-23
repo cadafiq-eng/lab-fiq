@@ -443,3 +443,5 @@ details.tarjeta summary { cursor: pointer; font-weight: 600; color: var(--azul);
 td.centro { text-align: center; }
 .seguimiento { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 10px; }
 .seguimiento li { display: grid; gap: 2px; border-left: 3px solid var(--oro); padding-left: 10px; }
+.prep-pendiente { border-left-color: #c2410c; background: #fff8f1; }
+.prep-dia + .tarjeta { margin-top: 18px; }
