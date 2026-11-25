@@ -48,7 +48,8 @@ export default function FormReservacion() {
     const t = (v) => (v == null ? '' : String(v));
     return { ...VACIO, ...Object.fromEntries(Object.keys(VACIO).filter((k) => k in importada.inicial)
       .map((k) => [k, k === 'ocupa_todo' ? importada.inicial[k] : t(importada.inicial[k])])),
-      ocupa_todo: ['clase', 'taller_curso'].includes(importada.inicial.actividad) };
+      ocupa_todo: typeof importada.inicial.ocupa_todo === 'boolean' ? importada.inicial.ocupa_todo
+        : ['clase', 'taller_curso'].includes(importada.inicial.actividad) };
   });
   const [extra] = useState({ folio_solicitud: importada?.inicial?.folio_solicitud ?? null, alumnos_pe: importada?.inicial?.alumnos_pe ?? null });
   const [dia, setDia] = useState(importada?.dia || params.get('fecha') || hoyISO());
@@ -116,7 +117,7 @@ export default function FormReservacion() {
   const fuera = plan.some((x) => fueraDeHorario(x.inicio, x.fin, config));
   const esClase = f.actividad === 'clase';
   const docencia = esClase || f.actividad === 'taller_curso';
-  const ocupaTodo = esClase || f.ocupa_todo;
+  const ocupaTodo = Boolean(f.ocupa_todo);
   const nombreEquipo = (eid) => { const e = equipos.find((x) => x.id === eid); return e ? `${e.codigo} · ${e.nombre}` : 'Equipo'; };
 
   // Cruces que la base va a rechazar, para avisar antes
@@ -215,10 +216,11 @@ export default function FormReservacion() {
               </>
             )}
             <label className="casilla">
-              <input type="checkbox" checked={ocupaTodo} disabled={esClase} onChange={campo('ocupa_todo')} />
-              Ocupa todo el laboratorio {esClase && <span className="tenue">(siempre, en una clase)</span>}
+              <input type="checkbox" checked={ocupaTodo} onChange={campo('ocupa_todo')} />
+              Ocupa todo el laboratorio
             </label>
-            {!esClase && <p className="tenue nota">Si no ocupa todo el laboratorio, puede coincidir con otras actividades que no usen los mismos equipos.</p>}
+            <p className="tenue nota">{docencia ? 'Las clases, talleres y cursos lo traen marcado; desmárquelo si solo usan una parte del laboratorio. ' : ''}
+              Si no ocupa todo el laboratorio, puede coincidir con otras actividades que no usen los mismos equipos.</p>
           </section>
 
           <section className="tarjeta formulario">

@@ -104,8 +104,8 @@ Inicie sesión como Administrador → **Personal** → cree:
 - Datos según el formato de solicitud de prácticas (FSP1), la solicitud de acceso y el reporte
   trimestral: responsable, usuarios, interno o externo e institución, asignatura, programa, semestre,
   alumnos, equipos, materiales y residuos peligrosos (grupos 1–7).
-- Reglas (en la base): una **clase** ocupa todo el laboratorio; las demás actividades pueden coincidir
-  salvo que se marquen «ocupa todo el laboratorio»; un **mismo equipo** no puede estar en dos
+- Reglas (en la base): las actividades pueden coincidir salvo que una se marque «ocupa todo el laboratorio»
+  (las clases, talleres y cursos lo traen marcado, y se puede quitar o cambiar después, también en toda la serie); un **mismo equipo** no puede estar en dos
   reservaciones a la vez; fuera de horario o en fin de semana solo el Administrador, con contacto de
   emergencia (formato FAV). Clases semanales como serie (máximo 26 sesiones; si una se cruza, no se
   guarda ninguna).

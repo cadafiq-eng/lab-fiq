@@ -18,6 +18,7 @@ export default function Detalle() {
   const [serie, setSerie] = useState([]);
   const [mensaje, setMensaje] = useState(null);
   const [cancelar, setCancelar] = useState(false);
+  const [ocupacion, setOcupacion] = useState(false);
 
   async function cargar() {
     const { data, error } = await supabase.from('reservaciones').select(`${SELECT_RESERVACION}, asistencias_reservacion(*)`).eq('id', id).single();
@@ -70,7 +71,9 @@ export default function Detalle() {
           <dl className="datos">
             <dt>Estado</dt><dd><EstadoReservacion r={r} />{r.estado === 'cancelada' && <span className="tenue"> · {r.motivo_cancelacion}</span>}</dd>
             <dt>Tipo</dt><dd>{a?.texto}</dd>
-            <dt>Laboratorio</dt><dd>{r.ocupa_todo ? 'Ocupa todo el laboratorio' : 'Uso compartido'}</dd>
+            <dt>Laboratorio</dt><dd>{r.ocupa_todo ? 'Ocupa todo el laboratorio' : 'Uso compartido'}
+              {puedeModificar && <> <button type="button" className="btn btn-chico" onClick={() => setOcupacion(true)}>
+                {r.ocupa_todo ? 'Cambiar a uso compartido' : 'Marcar que ocupa todo'}</button></>}</dd>
             {dato('Asignatura', r.asignatura)}
             {dato('Programa educativo', r.programa_educativo)}
             {dato('Semestre', r.semestre)}
@@ -117,6 +120,11 @@ export default function Detalle() {
           </section>
         )}
       </div>
+      {ocupacion && (
+        <CambiarOcupacion r={r} conSerie={serie.filter((s) => s.estado === 'programada' && s.inicio > r.inicio).length}
+          alCerrar={() => setOcupacion(false)}
+          alGuardar={(n) => { setOcupacion(false); setMensaje({ tipo: 'ok', texto: n > 1 ? `Se cambiaron ${n} sesiones.` : 'Ocupación cambiada.' }); cargar(); }} />
+      )}
       {cancelar && (
         <Cancelar r={r} conSerie={serie.filter((s) => s.estado === 'programada' && s.inicio > r.inicio).length}
           alCerrar={() => setCancelar(false)}
@@ -142,11 +150,44 @@ function Cancelar({ r, conSerie, alCerrar, alGuardar }) {
         <label>Motivo<textarea rows={2} value={motivo} onChange={(e) => setMotivo(e.target.value)} required /></label>
         {conSerie > 0 && (
           <label className="casilla"><input type="checkbox" checked={todas} onChange={(e) => setTodas(e.target.checked)} />
-            Cancelar también las {conSerie} sesiones siguientes de esta serie</label>
+            Cancelar también {conSerie === 1 ? 'la sesión siguiente' : `las ${conSerie} sesiones siguientes`} de esta serie</label>
         )}
         {error && <p className="aviso aviso-error">{error}</p>}
         <div className="fila-botones">
           <button className="btn btn-primario">Cancelar reservación</button>
+          <button type="button" className="btn" onClick={alCerrar}>Volver</button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+// Cambiar «ocupa todo el laboratorio / uso compartido» de esta sesión y, si se pide, de las siguientes de la serie
+function CambiarOcupacion({ r, conSerie, alCerrar, alGuardar }) {
+  const nuevo = !r.ocupa_todo;
+  const [todas, setTodas] = useState(conSerie > 0);
+  const [error, setError] = useState('');
+  const [ocupado, setOcupado] = useState(false);
+  async function guardar(e) {
+    e.preventDefault();
+    setOcupado(true);
+    const { data, error } = await supabase.rpc('cambiar_ocupacion', { p_id: r.id, p_ocupa_todo: nuevo, p_serie: todas });
+    setOcupado(false);
+    if (error) setError(mensajeError(error)); else alGuardar(data);
+  }
+  return (
+    <Modal titulo={nuevo ? 'Marcar que ocupa todo el laboratorio' : 'Cambiar a uso compartido'} alCerrar={alCerrar}>
+      <form className="formulario" onSubmit={guardar}>
+        <p className="tenue nota">{nuevo
+          ? 'Ninguna otra actividad podrá coincidir con esta reservación. Si ya hay algo a la misma hora, no se cambia.'
+          : 'Otras actividades podrán coincidir con esta reservación, siempre que no usen los mismos equipos.'}</p>
+        {conSerie > 0 && (
+          <label className="casilla"><input type="checkbox" checked={todas} onChange={(e) => setTodas(e.target.checked)} />
+            Aplicar también a {conSerie === 1 ? 'la sesión siguiente' : `las ${conSerie} sesiones siguientes`} de esta serie</label>
+        )}
+        {error && <p className="aviso aviso-error">{error}</p>}
+        <div className="fila-botones">
+          <button className="btn btn-primario" disabled={ocupado}>{ocupado ? 'Guardando…' : 'Guardar'}</button>
           <button type="button" className="btn" onClick={alCerrar}>Volver</button>
         </div>
       </form>

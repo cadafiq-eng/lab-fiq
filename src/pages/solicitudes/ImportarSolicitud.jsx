@@ -190,6 +190,7 @@ function Practica({ d, enlace }) {
   const [mensaje, setMensaje] = useState(null);
   const [ocupado, setOcupado] = useState(false);
   const [hecha, setHecha] = useState(null);   // reservación recién registrada
+  const [todoLab, setTodoLab] = useState(true);   // una clase o taller ocupa todo el laboratorio, salvo que se indique
 
   useEffect(() => {
     supabase.from('equipos').select('id, codigo, nombre, estado, tipos_equipo(nombre)').neq('estado', 'baja').order('nombre')
@@ -230,7 +231,7 @@ function Practica({ d, enlace }) {
     const vacio = (v) => (v === '' ? null : v);
     const p = {
       ...Object.fromEntries(Object.entries(x).map(([k, v]) => [k, vacio(v)])),
-      ocupa_todo: x.actividad === 'clase' || x.actividad === 'taller_curso',
+      ocupa_todo: todoLab,
       inicio: new Date(`${d.fecha}T${d.hora_inicio}`).toISOString(), fin: new Date(`${d.fecha}T${d.hora_fin}`).toISOString(),
       equipos: [...new Set(Object.values(elegidos).filter(Boolean))], residuos: d.residuos,
     };
@@ -244,7 +245,7 @@ function Practica({ d, enlace }) {
   function continuar() {
     navegar('/reservaciones/nueva', {
       state: {
-        inicial: datosReservacion(),
+        inicial: { ...datosReservacion(), ocupa_todo: todoLab },
         enlace_aprobacion: enlace,
         dia: d.fecha, horaIni: d.hora_inicio, horaFin: d.hora_fin,
         equipos: [...new Set(Object.values(elegidos).filter(Boolean))], residuos: d.residuos,
@@ -280,6 +281,12 @@ function Practica({ d, enlace }) {
             {opciones.length === 0 && <span className="tenue chico">Sin coincidencias en el catálogo: puede elegir de la lista completa.</span>}
           </label>
         ))}
+        {!hecha && (
+          <label className="casilla">
+            <input type="checkbox" checked={todoLab} onChange={(e) => setTodoLab(e.target.checked)} />
+            Ocupa todo el laboratorio <span className="tenue">(desmárquelo si la práctica usa solo una parte y puede coincidir con otras)</span>
+          </label>
+        )}
         <Aviso mensaje={mensaje} />
         {hecha ? (
           <div className="siguiente-paso">
