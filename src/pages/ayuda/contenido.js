@@ -127,8 +127,8 @@ export const CAPITULOS = [
           { tabla: {
             encabezados: ['Situación', 'Regla'],
             filas: [
-              ['Clase', 'Ocupa todo el laboratorio: no puede coincidir con ninguna otra reservación.'],
-              ['Investigación, proyecto, vinculación, taller u otra', 'Puede coincidir con otras actividades, salvo que se marque «Ocupa todo el laboratorio» (los talleres y cursos lo traen marcado).'],
+              ['Clase, taller o curso', 'Trae marcado «Ocupa todo el laboratorio»: no puede coincidir con ninguna otra reservación. Si la práctica usa solo una parte del laboratorio (p. ej., DNPA), desmárquelo y podrá coincidir con otras actividades.'],
+              ['Investigación, proyecto, vinculación u otra', 'Puede coincidir con otras actividades, salvo que se marque «Ocupa todo el laboratorio».'],
               ['Mismo equipo', 'Un equipo no puede estar en dos reservaciones a la misma hora.'],
               ['Fuera del horario o en fin de semana', 'Solo la registra el Administrador, con un contacto de emergencia. Conviene que trabajen al menos dos personas y avisar al Secretario Administrativo (formato de acceso en fin de semana).'],
               ['Uso continuo (empieza un día y termina otro)', 'Pasa fuera del horario: solo la registra el Administrador, con contacto de emergencia. Máximo 14 días; no se repite. En el calendario aparece rayada en cada día que abarca.'],
@@ -413,7 +413,7 @@ export const CAPITULOS = [
       },
       {
         titulo: 'No puedo guardar una reservación',
-        bloques: [{ p: 'El mensaje indica la causa: se cruza con una clase o con algo que ocupa todo el laboratorio, un equipo ya está reservado a esa hora, o es fuera de horario o en fin de semana (la registra el Administrador).' }],
+        bloques: [{ p: 'El mensaje indica la causa: se cruza con algo que ocupa todo el laboratorio, un equipo ya está reservado a esa hora, o es fuera de horario o en fin de semana (la registra el Administrador). Si la reservación que estorba en realidad no ocupa todo el laboratorio, ábrala y pulse «Cambiar a uso compartido» (junto a «Laboratorio»); en una serie puede aplicarlo también a las sesiones siguientes.' }],
       },
       {
         titulo: 'La app no reconoce el texto de una solicitud FIQ',

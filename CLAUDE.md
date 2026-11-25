@@ -53,8 +53,8 @@ Laboratorios de la FIQ y su Manual de Seguridad. Responsable: Dr. Luis Antonio C
   vigente o personas externas registradas (`solicitantes.externo`).
 - Inventario: consumibles (salida) y retornables (préstamo). La existencia solo cambia con
   movimientos. Pictogramas NOM-018-STPS-2015.
-- Reservaciones (`0007`): las registra el personal y quedan programadas sin aprobación. Una clase ocupa
-  todo el laboratorio; las demás actividades pueden coincidir salvo «ocupa todo»; un mismo equipo nunca
+- Reservaciones (`0007`): las registra el personal y quedan programadas sin aprobación. Clases, talleres y
+  cursos traen «ocupa todo» marcado, pero se puede quitar (`0017`, `cambiar_ocupacion`); las actividades coinciden salvo «ocupa todo»; un mismo equipo nunca
   se traslapa; fuera de horario o fin de semana, solo el Administrador con contacto de emergencia.
   Series semanales (máx. 26) o diarias (lun–vie o todos los días, máx. 60) (`0010`), o días con horario
   distinto (`registrar_reservacion_sesiones`, máx. 60, `0011`). Uso continuo de
